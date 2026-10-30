@@ -16,8 +16,8 @@ screenGui.Parent = playerGui
 -- Main Loader Window
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 320, 0, 180)
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -90)
+mainFrame.Size = UDim2.new(0, 340, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -80)
 mainFrame.BackgroundTransparency = 1
 mainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
 mainFrame.BorderSizePixel = 0
@@ -37,7 +37,7 @@ mainStroke.Parent = mainFrame
 
 -- Open Animation
 TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Position = UDim2.new(0.5, -160, 0.5, -100),
+    Position = UDim2.new(0.5, -170, 0.5, -90),
     BackgroundTransparency = 0
 }):Play()
 TweenService:Create(mainStroke, TweenInfo.new(0.4), {Transparency = 0.2}):Play()
@@ -64,7 +64,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -20, 1, 0)
 title.Position = UDim2.new(0, 14, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦊 FOXHUB LOADER"
+title.Text = "🦊 FoxHub - Loader"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextSize = 13
 title.Font = Enum.Font.GothamBold

@@ -17,7 +17,7 @@ screenGui.Parent = playerGui
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 340, 0, 220)
-mainFrame.Position = UDim2.new(0.5, -170, 0.5, -110)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -100)
 mainFrame.BackgroundTransparency = 1
 mainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
 mainFrame.BorderSizePixel = 0
@@ -37,7 +37,7 @@ mainStroke.Parent = mainFrame
 
 -- Open Animation
 TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Position = UDim2.new(0.5, -170, 0.5, -120),
+    Position = UDim2.new(0.5, -170, 0.5, -110),
     BackgroundTransparency = 0
 }):Play()
 TweenService:Create(mainStroke, TweenInfo.new(0.4), {Transparency = 0.2}):Play()

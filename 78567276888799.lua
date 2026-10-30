@@ -6,12 +6,12 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-if playerGui:FindFirstChild("FoxHubGui") then
-    playerGui.FoxHubGui:Destroy()
+if playerGui:FindFirstChild("FoxHubSellGui") then
+    playerGui.FoxHubSellGui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FoxHubGui"
+screenGui.Name = "FoxHubSellGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
@@ -19,7 +19,7 @@ screenGui.Parent = playerGui
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 340, 0, 360)
-mainFrame.Position = UDim2.new(0.5, -170, 0.5, -160)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -170)
 mainFrame.BackgroundTransparency = 1
 mainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
 mainFrame.BorderSizePixel = 0
