@@ -2,20 +2,76 @@ local ui = loadstring(game:HttpGet("https://raw.githubusercontent.com/FoxVukOff/
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local screenGui, mainFrame, header = ui.createWindow("FoxHubSellGui", "🦊 FoxHub - Sell Veritys", UDim2.new(0, 340, 0, 420))
+local screenGui, mainFrame, header = ui.createWindow("FoxHubSellGui", "🦊 FoxHub - Sell Veritys", UDim2.new(0, 360, 0, 520))
 ui.addCloseButton(header, mainFrame, screenGui)
 
-local container = ui.createScrollingFrame(mainFrame, 380)
+local container = ui.createScrollingFrame(mainFrame, 460)
 
 local row0, sw0, circ0 = ui.createToggleRow(container, "Auto Tap", 1)
-local row1, sw1, circ1 = ui.createToggleRow(container, "Auto Upgrade #1", 2)
-local row2, sw2, circ2 = ui.createToggleRow(container, "Auto Upgrade #2", 3)
-local row3, sw3, circ3 = ui.createToggleRow(container, "Auto Upgrade #3", 4)
-local row4, sw4, circ4 = ui.createToggleRow(container, "Auto Upgrade #4", 5)
-local row5, sw5, circ5 = ui.createToggleRow(container, "Auto Dealer", 6)
+
+local tapWhitelist = {1, 2, 3, 4}
+local tapDropdownVisible = false
+local tapDropdownFrame = nil
+
+local function toggleTapDropdown()
+    tapDropdownVisible = not tapDropdownVisible
+    if tapDropdownVisible and not tapDropdownFrame then
+        tapDropdownFrame = ui.createDropdown(
+            container,
+            "Tap Whitelist",
+            {"#1 (Verity Stand)", "#2 (Verity Truck)", "#3 (Verity Shop)", "#4 (Verity Depot)"},
+            true,
+            tapWhitelist,
+            2,
+            function(selection)
+                tapWhitelist = {}
+                for _, idx in ipairs(selection) do
+                    table.insert(tapWhitelist, idx)
+                end
+            end
+        )
+    elseif tapDropdownFrame then
+        tapDropdownFrame.Visible = tapDropdownVisible
+    end
+end
+
+ui.createSettingsRow(container, "Tap Settings", 2, toggleTapDropdown)
+
+local row1, sw1, circ1 = ui.createToggleRow(container, "Auto Upgrade", 3)
+
+local upgradeWhitelist = {1, 2, 3, 4}
+local upgradeDropdownVisible = false
+local upgradeDropdownFrame = nil
+
+local function toggleUpgradeDropdown()
+    upgradeDropdownVisible = not upgradeDropdownVisible
+    if upgradeDropdownVisible and not upgradeDropdownFrame then
+        upgradeDropdownFrame = ui.createDropdown(
+            container,
+            "Upgrade Whitelist",
+            {"#1 (Verity Stand)", "#2 (Verity Truck)", "#3 (Verity Shop)", "#4 (Verity Depot)"},
+            true,
+            upgradeWhitelist,
+            4,
+            function(selection)
+                upgradeWhitelist = {}
+                for _, idx in ipairs(selection) do
+                    table.insert(upgradeWhitelist, idx)
+                end
+            end
+        )
+    elseif upgradeDropdownFrame then
+        upgradeDropdownFrame.Visible = upgradeDropdownVisible
+    end
+end
+
+ui.createSettingsRow(container, "Upgrade Settings", 4, toggleUpgradeDropdown)
+
+local row2, sw2, circ2 = ui.createToggleRow(container, "Auto Dealer", 5)
 
 local activeTap = false
-local active1, active2, active3, active4, activeDealer = false, false, false, false, false
+local activeUpgrade = false
+local activeDealer = false
 
 sw0.MouseButton1Click:Connect(function()
     ui.spawnConfetti(sw0)
@@ -24,79 +80,61 @@ sw0.MouseButton1Click:Connect(function()
 end)
 sw1.MouseButton1Click:Connect(function()
     ui.spawnConfetti(sw1)
-    active1 = not active1
-    ui.setToggleState(active1, sw1, circ1)
+    activeUpgrade = not activeUpgrade
+    ui.setToggleState(activeUpgrade, sw1, circ1)
 end)
 sw2.MouseButton1Click:Connect(function()
     ui.spawnConfetti(sw2)
-    active2 = not active2
-    ui.setToggleState(active2, sw2, circ2)
-end)
-sw3.MouseButton1Click:Connect(function()
-    ui.spawnConfetti(sw3)
-    active3 = not active3
-    ui.setToggleState(active3, sw3, circ3)
-end)
-sw4.MouseButton1Click:Connect(function()
-    ui.spawnConfetti(sw4)
-    active4 = not active4
-    ui.setToggleState(active4, sw4, circ4)
-end)
-sw5.MouseButton1Click:Connect(function()
-    ui.spawnConfetti(sw5)
     activeDealer = not activeDealer
-    ui.setToggleState(activeDealer, sw5, circ5)
+    ui.setToggleState(activeDealer, sw2, circ2)
 end)
 
--- Auto Tap Logic Pipeline
+-- Auto Tap Logic (slower, sequential)
 task.spawn(function()
     local remotes = ReplicatedStorage:FindFirstChild("Remotes")
     local tapEvent = remotes and remotes:FindFirstChild("Tap")
     
     while true do
         if activeTap and tapEvent then
-            task.spawn(function() pcall(function() tapEvent:FireServer(1) end) end)
-            task.spawn(function() pcall(function() tapEvent:FireServer(2) end) end)
-            task.spawn(function() pcall(function() tapEvent:FireServer(3) end) end)
-            task.spawn(function() pcall(function() tapEvent:FireServer(4) end) end)
-            task.wait(0.1)
+            for _, id in ipairs(tapWhitelist) do
+                if not activeTap then break end
+                if tapEvent then
+                    pcall(function() tapEvent:FireServer(id) end)
+                end
+                task.wait(0.4)
+            end
+            if #tapWhitelist == 0 then
+                task.wait(0.5)
+            end
         else
             if not tapEvent then
                 remotes = ReplicatedStorage:FindFirstChild("Remotes")
                 tapEvent = remotes and remotes:FindFirstChild("Tap")
             end
-            task.wait(0.2)
+            task.wait(0.3)
         end
     end
 end)
 
--- Guaranteed sequential round-robin loop for all active upgraders
+-- Auto Upgrade Logic (sequential based on whitelist)
 task.spawn(function()
     while true do
-        local upgradeEvent = ReplicatedStorage.Remotes:FindFirstChild("Upgrade")
-        local firedAny = false
-        if upgradeEvent then
-            if active1 then
-                pcall(function() upgradeEvent:FireServer(1, 1) end)
-                firedAny = true
+        if activeUpgrade then
+            local upgradeEvent = ReplicatedStorage.Remotes:FindFirstChild("Upgrade")
+            if upgradeEvent then
+                for _, id in ipairs(upgradeWhitelist) do
+                    if not activeUpgrade then break end
+                    pcall(function() upgradeEvent:FireServer(id, 1) end)
+                    task.wait(0.5)
+                end
+                if #upgradeWhitelist == 0 then
+                    task.wait(0.5)
+                end
+            else
+                task.wait(0.5)
             end
-            if active2 then
-                pcall(function() upgradeEvent:FireServer(2, 1) end)
-                firedAny = true
-            end
-            if active3 then
-                pcall(function() upgradeEvent:FireServer(3, 1) end)
-                firedAny = true
-            end
-            if active4 then
-                pcall(function() upgradeEvent:FireServer(4, 1) end)
-                firedAny = true
-            end
-        end
-        if firedAny then
-            task.wait(0.05)
         else
-            task.wait(0.2)
+            task.wait(0.3)
         end
     end
 end)
@@ -110,7 +148,6 @@ task.spawn(function()
             local dealChoiceEvent = remotes and remotes:FindFirstChild("DealChoice")
             
             if dealEvent and dealChoiceEvent then
-                -- Весь процесс одной сделки обёрнут в pcall, чтобы ошибки не убивали поток
                 local success, err = pcall(function()
                     local capturedId = nil
                     local connection
@@ -121,7 +158,6 @@ task.spawn(function()
                         end
                     end)
                     
-                    -- Ждём сделку с таймаутом 15 секунд
                     local timeout = 15
                     local elapsed = 0
                     
@@ -130,19 +166,15 @@ task.spawn(function()
                         elapsed = elapsed + 0.1
                     end
                     
-                    -- ВАЖНО: Отключаем listener, чтобы не было утечки памяти и повторных срабатываний
                     if connection then
                         connection:Disconnect()
                         connection = nil
                     end
                     
-                    -- Если выключили функцию или вышел таймаут — просто прерываем текущую итерацию
-                    -- (return внутри pcall просто завершит функцию, а внешний цикл продолжит работать!)
                     if not activeDealer or not capturedId then
                         return
                     end
                     
-                    -- Просим "more" два раза
                     for i = 1, 2 do
                         if not activeDealer then return end
                         pcall(function()
@@ -151,22 +183,21 @@ task.spawn(function()
                         task.wait(1)
                     end
                     
-                    -- Принимаем сделку
                     if activeDealer then
                         pcall(function()
                             dealChoiceEvent:FireServer(capturedId, "accept")
                         end)
                     end
                     
-                    task.wait(1) -- Пауза перед поиском следующей сделки
+                    task.wait(1)
                 end)
                 
                 if not success then
                     warn("FoxHub Auto Dealer Error:", err)
-                    task.wait(2) -- Пауза после ошибки, чтобы не спамить в консоль
+                    task.wait(2)
                 end
             else
-                task.wait(1) -- Ждём, пока ивенты прогрузятся в ReplicatedStorage
+                task.wait(1)
             end
         else
             task.wait(0.2)
