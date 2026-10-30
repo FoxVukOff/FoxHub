@@ -1,7 +1,5 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local MarketplaceService = game:GetService("MarketplaceService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -116,9 +114,16 @@ task.spawn(function()
     
     task.wait(1)
     
-    local targetPlaceId = 78567276888799
+    -- Game Database mapping
+    local supportedGames = {
+        [78567276888799] = "78567276888799.lua",
+        [119958473240233] = "119958473240233.lua",
+        [139386728420706] = "139386728420706.lua"
+    }
     
-    if game.PlaceId == targetPlaceId then
+    local scriptFile = supportedGames[game.PlaceId]
+    
+    if scriptFile then
         statusLabel.Text = "Game found! Loading script..."
         TweenService:Create(barFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 0, 1, 0),
@@ -136,9 +141,9 @@ task.spawn(function()
         task.wait(0.3)
         screenGui:Destroy()
         
-        -- Run the main script
+        -- Run the target script dynamically
         local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/FoxVukOff/FoxHub/refs/heads/main/78567276888799.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/FoxVukOff/FoxHub/refs/heads/main/" .. scriptFile))()
         end)
         
         if not success then
