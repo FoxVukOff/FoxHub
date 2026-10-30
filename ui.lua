@@ -15,8 +15,7 @@ function ui.spawnConfetti(parentGui)
         Color3.fromRGB(120, 255, 150),
         Color3.fromRGB(200, 120, 255)
     }
-    local count = 18
-    for i = 1, count do
+    for i = 1, 18 do
         local particle = Instance.new("Frame")
         particle.Size = UDim2.new(0, math.random(4, 8), 0, math.random(10, 20))
         particle.BackgroundColor3 = colors[math.random(1, #colors)]
@@ -34,8 +33,7 @@ function ui.spawnConfetti(parentGui)
         local speed = math.random(40, 100)
         local targetX = startX + math.cos(angle) * speed
         local targetY = startY + math.sin(angle) * speed + math.random(30, 70)
-        local tweenInfo = TweenInfo.new(math.random(50, 90) / 100, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        local tween = TweenService:Create(particle, tweenInfo, {
+        local tween = TweenService:Create(particle, TweenInfo.new(math.random(50, 90) / 100, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
             Position = UDim2.new(0, targetX, 0, targetY),
             Rotation = math.random(-360, 360),
             BackgroundTransparency = 1
@@ -87,7 +85,6 @@ function ui.createWindow(guiName, titleText, windowSize)
     mainStroke.Thickness = 1
     mainStroke.Parent = mainFrame
 
-    -- Shadow effect via gradient-like background
     local shadowFrame = Instance.new("Frame")
     shadowFrame.Size = UDim2.new(1, 20, 1, 20)
     shadowFrame.Position = UDim2.new(0, -10, 0, -10)
@@ -96,7 +93,7 @@ function ui.createWindow(guiName, titleText, windowSize)
     shadowFrame.BorderSizePixel = 0
     shadowFrame.ZIndex = -1
     shadowFrame.Parent = mainFrame
-    
+
     local shadowCorner = Instance.new("UICorner")
     shadowCorner.CornerRadius = UDim.new(0, 20)
     shadowCorner.Parent = shadowFrame
@@ -194,17 +191,17 @@ function ui.addCloseButton(header, mainFrame, screenGui)
             Size = UDim2.new(0, 28, 0, 28)
         }):Play()
     end)
-    
+
     return closeBtn
 end
 
-function ui.createScrollingFrame(mainFrame, canvasSize)
+function ui.createScrollingFrame(mainFrame)
     local container = Instance.new("ScrollingFrame")
     container.Size = UDim2.new(1, -24, 1, -62)
     container.Position = UDim2.new(0, 12, 0, 54)
     container.BackgroundTransparency = 1
     container.BorderSizePixel = 0
-    container.CanvasSize = UDim2.new(0, 0, 0, canvasSize)
+    container.CanvasSize = UDim2.new(0, 0, 0, 0)
     container.ScrollBarThickness = 3
     container.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 120)
     container.Parent = mainFrame
@@ -219,7 +216,6 @@ function ui.createScrollingFrame(mainFrame, canvasSize)
     padding.PaddingBottom = UDim.new(0, 8)
     padding.Parent = container
 
-    -- Auto-resize canvas
     listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20)
     end)
@@ -296,321 +292,166 @@ function ui.setToggleState(state, switchBg, circle)
     end
 end
 
-function ui.createSettingsRow(container, name, order, onClick)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 44)
-    row.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-    row.BackgroundTransparency = 0.4
-    row.BorderSizePixel = 0
-    row.LayoutOrder = order
-    row.Parent = container
+-- Always-visible dimmed whitelist panel with multi-select (2x2 grid)
+function ui.createWhitelistPanel(container, caption, options, defaultSelection, order, onChange)
+    local panel = Instance.new("Frame")
+    panel.Name = "WhitelistPanel"
+    panel.Size = UDim2.new(1, 0, 0, 0)
+    panel.AutomaticSize = Enum.AutomaticSize.Y
+    panel.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+    panel.BackgroundTransparency = 0.35
+    panel.BorderSizePixel = 0
+    panel.LayoutOrder = order
+    panel.Parent = container
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = row
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = row
-
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0, 24, 1, 0)
-    icon.Position = UDim2.new(0, 12, 0, 0)
-    icon.BackgroundTransparency = 1
-    icon.Text = "⚙"
-    icon.TextColor3 = Color3.fromRGB(140, 140, 180)
-    icon.TextSize = 14
-    icon.Font = Enum.Font.Gotham
-    icon.Parent = btn
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.6, 0, 1, 0)
-    label.Position = UDim2.new(0, 40, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = Color3.fromRGB(170, 170, 200)
-    label.TextSize = 12
-    label.Font = Enum.Font.GothamMedium
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = btn
-
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 24, 1, 0)
-    arrow.Position = UDim2.new(1, -32, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = "▼"
-    arrow.TextColor3 = Color3.fromRGB(140, 140, 180)
-    arrow.TextSize = 12
-    arrow.Font = Enum.Font.GothamBold
-    arrow.Rotation = 0
-    arrow.Parent = btn
-
-    btn.MouseButton1Click:Connect(function()
-        onClick()
-    end)
-
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 42)}):Play()
-        TweenService:Create(icon, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200, 200, 255)}):Play()
-        TweenService:Create(arrow, TweenInfo.new(0.2), {Rotation = 90}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(20, 20, 28)}):Play()
-        TweenService:Create(icon, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(140, 140, 180)}):Play()
-        TweenService:Create(arrow, TweenInfo.new(0.2), {Rotation = 0}):Play()
-    end)
-
-    return row, arrow
-end
-
-function ui.createDropdown(container, label, options, isMultiSelect, defaultSelection, order, onChange)
-    local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(1, 0, 0, 52)
-    dropdownFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-    dropdownFrame.BorderSizePixel = 0
-    dropdownFrame.ClipsDescendants = true
-    dropdownFrame.LayoutOrder = order
-    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
-    dropdownFrame.Parent = container
-    
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = dropdownFrame
-    
+    corner.Parent = panel
+
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(50, 50, 70)
-    stroke.Transparency = 0.5
-    stroke.Parent = dropdownFrame
-    
-    -- Header button
-    local headerBtn = Instance.new("TextButton")
-    headerBtn.Size = UDim2.new(1, 0, 0, 52)
-    headerBtn.BackgroundTransparency = 1
-    headerBtn.Text = ""
-    headerBtn.AutoButtonColor = false
-    headerBtn.Parent = dropdownFrame
-    
-    local labelText = Instance.new("TextLabel")
-    labelText.Size = UDim2.new(0.4, 0, 1, 0)
-    labelText.Position = UDim2.new(0, 16, 0, 0)
-    labelText.BackgroundTransparency = 1
-    labelText.Text = label
-    labelText.TextColor3 = Color3.fromRGB(220, 220, 240)
-    labelText.TextSize = 13
-    labelText.Font = Enum.Font.GothamMedium
-    labelText.TextXAlignment = Enum.TextXAlignment.Left
-    labelText.Parent = headerBtn
-    
-    local valueText = Instance.new("TextLabel")
-    valueText.Size = UDim2.new(0.4, 0, 1, 0)
-    valueText.Position = UDim2.new(0.4, 0, 0, 0)
-    valueText.BackgroundTransparency = 1
-    valueText.Text = "None"
-    valueText.TextColor3 = Color3.fromRGB(140, 140, 170)
-    valueText.TextSize = 11
-    valueText.Font = Enum.Font.Gotham
-    valueText.TextXAlignment = Enum.TextXAlignment.Right
-    valueText.TextTruncate = Enum.TextTruncate.AtEnd
-    valueText.Parent = headerBtn
-    
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 24, 1, 0)
-    arrow.Position = UDim2.new(1, -32, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = "▼"
-    arrow.TextColor3 = Color3.fromRGB(140, 140, 170)
-    arrow.TextSize = 12
-    arrow.Font = Enum.Font.GothamBold
-    arrow.Rotation = 0
-    arrow.Parent = headerBtn
-    
-    -- Panel
-    local panel = Instance.new("Frame")
-    panel.Size = UDim2.new(1, -16, 0, 0)
-    panel.Position = UDim2.new(0, 8, 0, 52)
-    panel.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
-    panel.BorderSizePixel = 0
-    panel.ClipsDescendants = true
-    panel.Visible = false
-    panel.Parent = dropdownFrame
-    
-    local panelCorner = Instance.new("UICorner")
-    panelCorner.CornerRadius = UDim.new(0, 10)
-    panelCorner.Parent = panel
-    
-    local panelStroke = Instance.new("UIStroke")
-    panelStroke.Color = Color3.fromRGB(50, 50, 70)
-    panelStroke.Transparency = 0.3
-    panelStroke.Parent = panel
-    
-    local panelLayout = Instance.new("UIListLayout")
-    panelLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    panelLayout.Padding = UDim.new(0, 4)
-    panelLayout.Parent = panel
-    
-    local panelPadding = Instance.new("UIPadding")
-    panelPadding.PaddingTop = UDim.new(0, 8)
-    panelPadding.PaddingBottom = UDim.new(0, 8)
-    panelPadding.PaddingLeft = UDim.new(0, 8)
-    panelPadding.PaddingRight = UDim.new(0, 8)
-    panelPadding.Parent = panel
-    
-    local isOpen = false
-    local selection = defaultSelection or {}
-    if not isMultiSelect and type(selection) ~= "table" and selection then
-        selection = {selection}
+    stroke.Color = Color3.fromRGB(45, 45, 62)
+    stroke.Transparency = 0.65
+    stroke.Parent = panel
+
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = panel
+
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.PaddingBottom = UDim.new(0, 10)
+    padding.PaddingLeft = UDim.new(0, 12)
+    padding.PaddingRight = UDim.new(0, 12)
+    padding.Parent = panel
+
+    local captionRow = Instance.new("Frame")
+    captionRow.Size = UDim2.new(1, 0, 0, 16)
+    captionRow.BackgroundTransparency = 1
+    captionRow.LayoutOrder = 0
+    captionRow.Parent = panel
+
+    local captionLabel = Instance.new("TextLabel")
+    captionLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    captionLabel.Position = UDim2.new(0, 2, 0, 0)
+    captionLabel.BackgroundTransparency = 1
+    captionLabel.Text = caption
+    captionLabel.TextColor3 = Color3.fromRGB(150, 150, 175)
+    captionLabel.TextSize = 11
+    captionLabel.Font = Enum.Font.GothamMedium
+    captionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    captionLabel.Parent = captionRow
+
+    local countLabel = Instance.new("TextLabel")
+    countLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    countLabel.Position = UDim2.new(0.6, 0, 0, 0)
+    countLabel.BackgroundTransparency = 1
+    countLabel.Text = ""
+    countLabel.TextColor3 = Color3.fromRGB(120, 120, 145)
+    countLabel.TextSize = 10
+    countLabel.Font = Enum.Font.Gotham
+    countLabel.TextXAlignment = Enum.TextXAlignment.Right
+    countLabel.Parent = captionRow
+
+    local grid = Instance.new("Frame")
+    grid.Size = UDim2.new(1, 0, 0, 0)
+    grid.AutomaticSize = Enum.AutomaticSize.Y
+    grid.BackgroundTransparency = 1
+    grid.LayoutOrder = 1
+    grid.Parent = panel
+
+    local gridLayout = Instance.new("UIGridLayout")
+    gridLayout.CellSize = UDim2.new(0.5, -4, 0, 34)
+    gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+    gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    gridLayout.Parent = grid
+
+    local selection = {}
+    for _, idx in ipairs(defaultSelection or {}) do
+        table.insert(selection, idx)
     end
-    
-    local optionButtons = {}
-    
-    local function updateValueText()
-        local labels = {}
-        for _, opt in ipairs(options) do
-            local idx = tonumber(string.match(opt, "^#(%d+)"))
-            if idx and table.find(selection, idx) then
-                table.insert(labels, opt)
-            elseif table.find(selection, opt) then
-                table.insert(labels, opt)
-            end
-        end
-        if #labels == 0 then
-            valueText.Text = "None"
-        elseif #labels <= 2 then
-            valueText.Text = table.concat(labels, ", ")
-        else
-            valueText.Text = string.format("%d selected", #labels)
+
+    local cells = {}
+
+    local function updateVisuals()
+        countLabel.Text = #selection .. "/" .. #options
+        for i, cellData in ipairs(cells) do
+            local selected = table.find(selection, i) ~= nil
+            cellData.check.Text = selected and "✓" or ""
+            TweenService:Create(cellData.button, TweenInfo.new(0.2), {
+                BackgroundColor3 = selected and Color3.fromRGB(38, 38, 56) or Color3.fromRGB(24, 24, 32),
+                BackgroundTransparency = selected and 0.15 or 0.45
+            }):Play()
+            TweenService:Create(cellData.label, TweenInfo.new(0.2), {
+                TextColor3 = selected and Color3.fromRGB(215, 215, 235) or Color3.fromRGB(150, 150, 170)
+            }):Play()
         end
     end
-    
+
     for i, option in ipairs(options) do
-        local isSelected = table.find(selection, i) ~= nil
-        
-        local optBtn = Instance.new("TextButton")
-        optBtn.Size = UDim2.new(1, 0, 0, 36)
-        optBtn.BackgroundColor3 = isSelected and Color3.fromRGB(35, 35, 55) or Color3.fromRGB(22, 22, 32)
-        optBtn.BorderSizePixel = 0
-        optBtn.Text = ""
-        optBtn.LayoutOrder = i
-        optBtn.AutoButtonColor = false
-        optBtn.Parent = panel
-        
-        local optCorner = Instance.new("UICorner")
-        optCorner.CornerRadius = UDim.new(0, 8)
-        optCorner.Parent = optBtn
-        
-        local optLabel = Instance.new("TextLabel")
-        optLabel.Size = UDim2.new(1, -50, 1, 0)
-        optLabel.Position = UDim2.new(0, 14, 0, 0)
-        optLabel.BackgroundTransparency = 1
-        optLabel.Text = option
-        optLabel.TextColor3 = Color3.fromRGB(210, 210, 230)
-        optLabel.TextSize = 12
-        optLabel.Font = Enum.Font.Gotham
-        optLabel.TextXAlignment = Enum.TextXAlignment.Left
-        optLabel.Parent = optBtn
-        
+        local cell = Instance.new("TextButton")
+        cell.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+        cell.BackgroundTransparency = 0.45
+        cell.BorderSizePixel = 0
+        cell.AutoButtonColor = false
+        cell.Text = ""
+        cell.LayoutOrder = i
+        cell.Parent = grid
+
+        local cellCorner = Instance.new("UICorner")
+        cellCorner.CornerRadius = UDim.new(0, 8)
+        cellCorner.Parent = cell
+
         local check = Instance.new("TextLabel")
-        check.Size = UDim2.new(0, 24, 1, 0)
-        check.Position = UDim2.new(1, -36, 0, 0)
+        check.Size = UDim2.new(0, 18, 1, 0)
+        check.Position = UDim2.new(0, 8, 0, 0)
         check.BackgroundTransparency = 1
-        check.Text = isSelected and "✓" or ""
+        check.Text = ""
         check.TextColor3 = Color3.fromRGB(80, 220, 120)
-        check.TextSize = 16
+        check.TextSize = 13
         check.Font = Enum.Font.GothamBold
-        check.Parent = optBtn
-        
-        optBtn.MouseButton1Click:Connect(function()
-            if isMultiSelect then
-                local idx = table.find(selection, i)
-                if idx then
-                    table.remove(selection, idx)
-                    TweenService:Create(optBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 22, 32)}):Play()
-                    check.Text = ""
-                else
-                    table.insert(selection, i)
-                    TweenService:Create(optBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 55)}):Play()
-                    check.Text = "✓"
-                end
+        check.Parent = cell
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -30, 1, 0)
+        label.Position = UDim2.new(0, 26, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = option
+        label.TextColor3 = Color3.fromRGB(150, 150, 170)
+        label.TextSize = 11
+        label.Font = Enum.Font.Gotham
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.TextTruncate = Enum.TextTruncate.AtEnd
+        label.Parent = cell
+
+        table.insert(cells, {button = cell, check = check, label = label})
+
+        cell.MouseButton1Click:Connect(function()
+            local idx = table.find(selection, i)
+            if idx then
+                table.remove(selection, idx)
             else
-                selection = {i}
-                for j, btnData in ipairs(optionButtons) do
-                    TweenService:Create(btnData.button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 22, 32)}):Play()
-                    btnData.check.Text = ""
-                end
-                TweenService:Create(optBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 55)}):Play()
-                check.Text = "✓"
+                table.insert(selection, i)
             end
-            updateValueText()
+            updateVisuals()
             if onChange then onChange(selection) end
         end)
-        
-        optBtn.MouseEnter:Connect(function()
+
+        cell.MouseEnter:Connect(function()
             if not table.find(selection, i) then
-                TweenService:Create(optBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28, 28, 42)}):Play()
+                TweenService:Create(cell, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play()
             end
         end)
-        optBtn.MouseLeave:Connect(function()
+        cell.MouseLeave:Connect(function()
             if not table.find(selection, i) then
-                TweenService:Create(optBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(22, 22, 32)}):Play()
+                TweenService:Create(cell, TweenInfo.new(0.15), {BackgroundTransparency = 0.45}):Play()
             end
         end)
-        
-        table.insert(optionButtons, {button = optBtn, check = check})
     end
-    
-    panelLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        if isOpen then
-            panel.Size = UDim2.new(1, -16, 0, panelLayout.AbsoluteContentSize.Y + 16)
-        end
-    end)
-    
-    updateValueText()
-    
-    headerBtn.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        if isOpen then
-            panel.Visible = true
-            TweenService:Create(panel, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, -16, 0, panelLayout.AbsoluteContentSize.Y + 16)
-            }):Play()
-            TweenService:Create(arrow, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Rotation = 180}):Play()
-            TweenService:Create(dropdownFrame, TweenInfo.new(0.3), {
-                BackgroundColor3 = Color3.fromRGB(24, 24, 34)
-            }):Play()
-        else
-            TweenService:Create(panel, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.new(1, -16, 0, 0)
-            }):Play()
-            TweenService:Create(arrow, TweenInfo.new(0.25), {Rotation = 0}):Play()
-            TweenService:Create(dropdownFrame, TweenInfo.new(0.25), {
-                BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-            }):Play()
-            task.delay(0.25, function()
-                if not isOpen then
-                    panel.Visible = false
-                end
-            end)
-        end
-    end)
-    
-    headerBtn.MouseEnter:Connect(function()
-        if not isOpen then
-            TweenService:Create(dropdownFrame, TweenInfo.new(0.2), {
-                BackgroundColor3 = Color3.fromRGB(26, 26, 36)
-            }):Play()
-        end
-    end)
-    headerBtn.MouseLeave:Connect(function()
-        if not isOpen then
-            TweenService:Create(dropdownFrame, TweenInfo.new(0.2), {
-                BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-            }):Play()
-        end
-    end)
-    
-    return dropdownFrame, function() return selection end
+
+    updateVisuals()
+
+    return panel, function() return selection end
 end
 
 return ui
