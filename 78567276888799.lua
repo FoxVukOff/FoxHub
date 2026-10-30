@@ -55,15 +55,16 @@ task.spawn(function()
     
     while true do
         if activeTap and tapEvent then
-            -- Спамим 4 запроса одновременно через task.spawn, чтобы не блокировать основной поток
             task.spawn(function() pcall(function() tapEvent:FireServer(1) end) end)
             task.spawn(function() pcall(function() tapEvent:FireServer(2) end) end)
             task.spawn(function() pcall(function() tapEvent:FireServer(3) end) end)
             task.spawn(function() pcall(function() tapEvent:FireServer(4) end) end)
-            
-            -- Задержка 0.1с (10 итераций в сек = 40 запросов/сек). Не лагает, но очень быстро.
             task.wait(0.1)
         else
+            if not tapEvent then
+                remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                tapEvent = remotes and remotes:FindFirstChild("Tap")
+            end
             task.wait(0.2)
         end
     end
@@ -100,7 +101,7 @@ task.spawn(function()
     end
 end)
 
--- Auto Dealer Logic Pipeline
+-- Auto Dealer Logic Pipeline (Fully bug-proofed)
 task.spawn(function()
     while true do
         if activeDealer then
@@ -109,51 +110,63 @@ task.spawn(function()
             local dealChoiceEvent = remotes and remotes:FindFirstChild("DealChoice")
             
             if dealEvent and dealChoiceEvent then
-                local capturedId = nil
-                local connection
-                connection = dealEvent.OnClientEvent:Connect(function(data)
-                    if type(data) == "table" and data.Id then
-                        capturedId = data.Id
-                        if connection then
-                            connection:Disconnect()
-                            connection = nil
+                -- Весь процесс одной сделки обёрнут в pcall, чтобы ошибки не убивали поток
+                local success, err = pcall(function()
+                    local capturedId = nil
+                    local connection
+                    
+                    connection = dealEvent.OnClientEvent:Connect(function(data)
+                        if type(data) == "table" and data.Id then
+                            capturedId = data.Id
                         end
+                    end)
+                    
+                    -- Ждём сделку с таймаутом 15 секунд
+                    local timeout = 15
+                    local elapsed = 0
+                    
+                    while activeDealer and not capturedId and elapsed < timeout do
+                        task.wait(0.1)
+                        elapsed = elapsed + 0.1
                     end
+                    
+                    -- ВАЖНО: Отключаем listener, чтобы не было утечки памяти и повторных срабатываний
+                    if connection then
+                        connection:Disconnect()
+                        connection = nil
+                    end
+                    
+                    -- Если выключили функцию или вышел таймаут — просто прерываем текущую итерацию
+                    -- (return внутри pcall просто завершит функцию, а внешний цикл продолжит работать!)
+                    if not activeDealer or not capturedId then
+                        return
+                    end
+                    
+                    -- Просим "more" два раза
+                    for i = 1, 2 do
+                        if not activeDealer then return end
+                        pcall(function()
+                            dealChoiceEvent:FireServer(capturedId, "more")
+                        end)
+                        task.wait(1)
+                    end
+                    
+                    -- Принимаем сделку
+                    if activeDealer then
+                        pcall(function()
+                            dealChoiceEvent:FireServer(capturedId, "accept")
+                        end)
+                    end
+                    
+                    task.wait(1) -- Пауза перед поиском следующей сделки
                 end)
                 
-                local timeout = 10
-                local elapsed = 0
-                while activeDealer and not capturedId and elapsed < timeout do
-                    task.wait(0.1)
-                    elapsed = elapsed + 0.1
+                if not success then
+                    warn("FoxHub Auto Dealer Error:", err)
+                    task.wait(2) -- Пауза после ошибки, чтобы не спамить в консоль
                 end
-                
-                if not activeDealer then
-                    if connection then connection:Disconnect() end
-                    break
-                end
-                if not capturedId then
-                    if connection then connection:Disconnect() end
-                    task.wait(1)
-                    continue
-                end
-                
-                for i = 1, 2 do
-                    if not activeDealer then break end
-                    pcall(function()
-                        dealChoiceEvent:FireServer(capturedId, "more")
-                    end)
-                    task.wait(1)
-                end
-                
-                if activeDealer then
-                    pcall(function()
-                        dealChoiceEvent:FireServer(capturedId, "accept")
-                    end)
-                end
-                task.wait(1)
             else
-                task.wait(1)
+                task.wait(1) -- Ждём, пока ивенты прогрузятся в ReplicatedStorage
             end
         else
             task.wait(0.2)
