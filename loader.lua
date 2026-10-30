@@ -1,78 +1,7 @@
-local Players = game:GetService("Players")
+local ui = loadstring(game:HttpGet("https://raw.githubusercontent.com/FoxVukOff/FoxHub/refs/heads/main/ui.lua"))()
 local TweenService = game:GetService("TweenService")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
-if playerGui:FindFirstChild("FoxHubLoaderGui") then
-    playerGui.FoxHubLoaderGui:Destroy()
-end
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FoxHubLoaderGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
--- Main Loader Window
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 340, 0, 180)
-mainFrame.Position = UDim2.new(0.5, -170, 0.5, -80)
-mainFrame.BackgroundTransparency = 1
-mainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 14)
-mainCorner.Parent = mainFrame
-
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(60, 60, 80)
-mainStroke.Transparency = 1
-mainStroke.Thickness = 1.5
-mainStroke.Parent = mainFrame
-
--- Open Animation
-TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Position = UDim2.new(0.5, -170, 0.5, -90),
-    BackgroundTransparency = 0
-}):Play()
-
-TweenService:Create(mainStroke, TweenInfo.new(0.4), {
-    Transparency = 0.2
-}):Play()
-
--- Header
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 42)
-header.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-header.BorderSizePixel = 0
-header.Parent = mainFrame
-
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 14)
-headerCorner.Parent = header
-
-local headerFix = Instance.new("Frame")
-headerFix.Size = UDim2.new(1, 0, 0, 10)
-headerFix.Position = UDim2.new(0, 0, 1, -10)
-headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-headerFix.BorderSizePixel = 0
-headerFix.Parent = header
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 1, 0)
-title.Position = UDim2.new(0, 14, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "🦊 FoxHub - Loader"
-title.TextColor3 = Color3.fromRGB(240, 240, 255)
-title.TextSize = 13
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
+local screenGui, mainFrame, header = ui.createWindow("FoxHubLoaderGui", "🦊 FoxHub - Loader", UDim2.new(0, 340, 0, 180))
 
 -- Status Label
 local statusLabel = Instance.new("TextLabel")
@@ -117,7 +46,6 @@ task.spawn(function()
 
     task.wait(1)
 
-    -- Game Database mapping
     local supportedGames = {
         [78567276888799] = "78567276888799.lua"
     }
@@ -134,7 +62,6 @@ task.spawn(function()
 
         task.wait(0.6)
 
-        -- Close loader gui gracefully
         TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
             Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -144,7 +71,6 @@ task.spawn(function()
         task.wait(0.3)
         screenGui:Destroy()
 
-        -- Run the target script dynamically
         local success, err = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/FoxVukOff/FoxHub/refs/heads/main/" .. scriptFile))()
         end)
