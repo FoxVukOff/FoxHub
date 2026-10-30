@@ -6,12 +6,12 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-if playerGui:FindFirstChild("CobaltHubGui") then
-    playerGui.CobaltHubGui:Destroy()
+if playerGui:FindFirstChild("FoxHubGui") then
+    playerGui.FoxHubGui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CobaltHubGui"
+screenGui.Name = "FoxHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
@@ -66,7 +66,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -20, 1, 0)
 title.Position = UDim2.new(0, 14, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "✨ COBALT ELITE SYSTEM"
+title.Text = "🦊 FoxHub - Sell Veritys"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextSize = 13
 title.Font = Enum.Font.GothamBold
