@@ -40,7 +40,10 @@ TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.Ea
     Position = UDim2.new(0.5, -170, 0.5, -90),
     BackgroundTransparency = 0
 }):Play()
-TweenService:Create(mainStroke, TweenInfo.new(0.4), {Transparency = 0.2}):Play()
+
+TweenService:Create(mainStroke, TweenInfo.new(0.4), {
+    Transparency = 0.2
+}):Play()
 
 -- Header
 local header = Instance.new("Frame")
@@ -111,63 +114,64 @@ task.spawn(function()
     TweenService:Create(barFill, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0.6, 0, 1, 0)
     }):Play()
-    
+
     task.wait(1)
-    
+
     -- Game Database mapping
     local supportedGames = {
-        [78567276888799] = "78567276888799.lua",
-        [119958473240233] = "119958473240233.lua",
-        [139386728420706] = "139386728420706.lua"
+        [78567276888799] = "78567276888799.lua"
     }
-    
+
     local scriptFile = supportedGames[game.PlaceId]
-    
+
     if scriptFile then
         statusLabel.Text = "Game found! Loading script..."
+
         TweenService:Create(barFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundColor3 = Color3.fromRGB(50, 195, 90)
         }):Play()
-        
+
         task.wait(0.6)
-        
+
         -- Close loader gui gracefully
         TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1
         }):Play()
+
         task.wait(0.3)
         screenGui:Destroy()
-        
+
         -- Run the target script dynamically
         local success, err = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/FoxVukOff/FoxHub/refs/heads/main/" .. scriptFile))()
         end)
-        
+
         if not success then
             warn("FoxHub Error executing script: " .. tostring(err))
         end
     else
         statusLabel.Text = "Current game is not in the database! Closing in 5 seconds..."
         statusLabel.TextColor3 = Color3.fromRGB(220, 70, 70)
-        
+
         TweenService:Create(barFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundColor3 = Color3.fromRGB(200, 50, 50)
         }):Play()
-        
+
         for i = 5, 1, -1 do
             statusLabel.Text = "Current game is not in the database! Closing in " .. i .. "s..."
             task.wait(1)
         end
-        
+
         TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1
         }):Play()
+
         task.wait(0.3)
         screenGui:Destroy()
     end
