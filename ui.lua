@@ -331,6 +331,86 @@ function ui.setToggleState(state, switchBg, circle)
     end
 end
 
+function ui.createSubToggleRow(container, name, order)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 40)
+    row.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+    row.BorderSizePixel = 0
+    row.LayoutOrder = order
+    row.Parent = container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = row
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(55, 55, 75)
+    stroke.Transparency = 0.65
+    stroke.Parent = row
+
+    ui.applyHoverEffect(row, Color3.fromRGB(24, 24, 32), Color3.fromRGB(31, 31, 42))
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -80, 1, 0)
+    label.Position = UDim2.new(0, 14, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(205, 205, 225)
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamMedium
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+
+    local switchBg = Instance.new("TextButton")
+    switchBg.Size = UDim2.new(0, 46, 0, 24)
+    switchBg.Position = UDim2.new(1, -58, 0.5, -12)
+    switchBg.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    switchBg.BorderSizePixel = 0
+    switchBg.Text = ""
+    switchBg.AutoButtonColor = false
+    switchBg.Parent = row
+
+    local switchCorner = Instance.new("UICorner")
+    switchCorner.CornerRadius = UDim.new(1, 0)
+    switchCorner.Parent = switchBg
+
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0, 18, 0, 18)
+    circle.Position = UDim2.new(0, 3, 0.5, -9)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.BorderSizePixel = 0
+    circle.Parent = switchBg
+
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = circle
+
+    return row, switchBg, circle
+end
+
+function ui.setSubToggleState(state, switchBg, circle)
+    local bgTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    local circTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+    if state then
+        TweenService:Create(switchBg, bgTweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(60, 200, 100)
+        }):Play()
+
+        TweenService:Create(circle, circTweenInfo, {
+            Position = UDim2.new(1, -21, 0.5, -9)
+        }):Play()
+    else
+        TweenService:Create(switchBg, bgTweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        }):Play()
+
+        TweenService:Create(circle, circTweenInfo, {
+            Position = UDim2.new(0, 3, 0.5, -9)
+        }):Play()
+    end
+end
+
 function ui.createWhitelistPanel(container, caption, options, defaultSelection, order, onChange)
     local panel = Instance.new("Frame")
     panel.Name = "WhitelistPanel"
@@ -613,7 +693,7 @@ function ui.createInputRow(container, name, defaultText, buttonText, order, onAp
     return row, textBox, button
 end
 
-function ui.createColorPanel(container, caption, colors, defaultIndex, order, onChange)
+function ui.createColorSelector(container, caption, colors, defaultIndex, order)
     if not colors or #colors == 0 then
         colors = {
             {
@@ -623,42 +703,25 @@ function ui.createColorPanel(container, caption, colors, defaultIndex, order, on
         }
     end
 
-    local panel = Instance.new("Frame")
-    panel.Name = "ColorPanel"
-    panel.Size = UDim2.new(1, 0, 0, 0)
-    panel.AutomaticSize = Enum.AutomaticSize.Y
-    panel.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
-    panel.BackgroundTransparency = 0.35
-    panel.BorderSizePixel = 0
-    panel.LayoutOrder = order
-    panel.Parent = container
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = panel
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(45, 45, 62)
-    stroke.Transparency = 0.65
-    stroke.Parent = panel
+    local selector = Instance.new("Frame")
+    selector.Name = "ColorSelector"
+    selector.Size = UDim2.new(1, 0, 0, 0)
+    selector.AutomaticSize = Enum.AutomaticSize.Y
+    selector.BackgroundTransparency = 1
+    selector.BorderSizePixel = 0
+    selector.LayoutOrder = order
+    selector.Parent = container
 
     local layout = Instance.new("UIListLayout")
     layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 8)
-    layout.Parent = panel
-
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 10)
-    padding.PaddingBottom = UDim.new(0, 10)
-    padding.PaddingLeft = UDim.new(0, 12)
-    padding.PaddingRight = UDim.new(0, 12)
-    padding.Parent = panel
+    layout.Padding = UDim.new(0, 6)
+    layout.Parent = selector
 
     local captionRow = Instance.new("Frame")
     captionRow.Size = UDim2.new(1, 0, 0, 16)
     captionRow.BackgroundTransparency = 1
     captionRow.LayoutOrder = 0
-    captionRow.Parent = panel
+    captionRow.Parent = selector
 
     local captionLabel = Instance.new("TextLabel")
     captionLabel.Size = UDim2.new(0.6, 0, 1, 0)
@@ -687,10 +750,10 @@ function ui.createColorPanel(container, caption, colors, defaultIndex, order, on
     grid.AutomaticSize = Enum.AutomaticSize.Y
     grid.BackgroundTransparency = 1
     grid.LayoutOrder = 1
-    grid.Parent = panel
+    grid.Parent = selector
 
     local gridLayout = Instance.new("UIGridLayout")
-    gridLayout.CellSize = UDim2.new(0.25, -6, 0, 32)
+    gridLayout.CellSize = UDim2.new(0.25, -6, 0, 28)
     gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
     gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
     gridLayout.Parent = grid
@@ -785,10 +848,6 @@ function ui.createColorPanel(container, caption, colors, defaultIndex, order, on
         cell.MouseButton1Click:Connect(function()
             selected = i
             updateVisuals()
-
-            if onChange then
-                onChange(getEntry(selected).color)
-            end
         end)
 
         cell.MouseEnter:Connect(function()
@@ -810,9 +869,101 @@ function ui.createColorPanel(container, caption, colors, defaultIndex, order, on
 
     updateVisuals()
 
-    return panel, function()
+    return selector, function()
         return getEntry(selected).color
     end
+end
+
+function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, order)
+    local wrapper = Instance.new("Frame")
+    wrapper.Name = "EspPanelWrapper"
+    wrapper.Size = UDim2.new(1, 0, 0, 0)
+    wrapper.AutomaticSize = Enum.AutomaticSize.Y
+    wrapper.BackgroundTransparency = 1
+    wrapper.BorderSizePixel = 0
+    wrapper.LayoutOrder = order
+    wrapper.Parent = container
+
+    local wrapperLayout = Instance.new("UIListLayout")
+    wrapperLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    wrapperLayout.Padding = UDim.new(0, 8)
+    wrapperLayout.Parent = wrapper
+
+    local state = {
+        enabled = false,
+        model = true,
+        boxes = false,
+        tracers = false
+    }
+
+    local mainRow, mainSwitch, mainCircle = ui.createToggleRow(wrapper, title, 0)
+
+    local options = Instance.new("Frame")
+    options.Name = "EspOptions"
+    options.Size = UDim2.new(1, 0, 0, 0)
+    options.AutomaticSize = Enum.AutomaticSize.Y
+    options.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+    options.BackgroundTransparency = 0.35
+    options.BorderSizePixel = 0
+    options.LayoutOrder = 1
+    options.Parent = wrapper
+
+    local optionsCorner = Instance.new("UICorner")
+    optionsCorner.CornerRadius = UDim.new(0, 12)
+    optionsCorner.Parent = options
+
+    local optionsStroke = Instance.new("UIStroke")
+    optionsStroke.Color = Color3.fromRGB(45, 45, 62)
+    optionsStroke.Transparency = 0.7
+    optionsStroke.Parent = options
+
+    local optionsLayout = Instance.new("UIListLayout")
+    optionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    optionsLayout.Padding = UDim.new(0, 8)
+    optionsLayout.Parent = options
+
+    local optionsPadding = Instance.new("UIPadding")
+    optionsPadding.PaddingTop = UDim.new(0, 10)
+    optionsPadding.PaddingBottom = UDim.new(0, 10)
+    optionsPadding.PaddingLeft = UDim.new(0, 10)
+    optionsPadding.PaddingRight = UDim.new(0, 10)
+    optionsPadding.Parent = options
+
+    local modelRow, modelSwitch, modelCircle = ui.createSubToggleRow(options, "Model", 0)
+    local boxesRow, boxesSwitch, boxesCircle = ui.createSubToggleRow(options, "Boxes", 1)
+    local tracersRow, tracersSwitch, tracersCircle = ui.createSubToggleRow(options, "Tracers", 2)
+    local colorSelector, getColor = ui.createColorSelector(options, "Color", colorOptions, defaultColorIndex, 3)
+
+    ui.setToggleState(state.enabled, mainSwitch, mainCircle)
+    ui.setSubToggleState(state.model, modelSwitch, modelCircle)
+    ui.setSubToggleState(state.boxes, boxesSwitch, boxesCircle)
+    ui.setSubToggleState(state.tracers, tracersSwitch, tracersCircle)
+
+    mainSwitch.MouseButton1Click:Connect(function()
+        state.enabled = not state.enabled
+        ui.spawnConfetti(mainSwitch)
+        ui.setToggleState(state.enabled, mainSwitch, mainCircle)
+    end)
+
+    modelSwitch.MouseButton1Click:Connect(function()
+        state.model = not state.model
+        ui.spawnConfetti(modelSwitch)
+        ui.setSubToggleState(state.model, modelSwitch, modelCircle)
+    end)
+
+    boxesSwitch.MouseButton1Click:Connect(function()
+        state.boxes = not state.boxes
+        ui.spawnConfetti(boxesSwitch)
+        ui.setSubToggleState(state.boxes, boxesSwitch, boxesCircle)
+    end)
+
+    tracersSwitch.MouseButton1Click:Connect(function()
+        state.tracers = not state.tracers
+        ui.spawnConfetti(tracersSwitch)
+        ui.setSubToggleState(state.tracers, tracersSwitch, tracersCircle)
+    end)
+
+    return wrapper, state, getColor
 end
 
 return ui

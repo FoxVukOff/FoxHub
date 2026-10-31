@@ -3,7 +3,6 @@ local TweenService = game:GetService("TweenService")
 
 local screenGui, mainFrame, header = ui.createWindow("FoxHubLoaderGui", "🦊 FoxHub - Loader", UDim2.new(0, 340, 0, 190))
 
--- Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -40, 0, 40)
 statusLabel.Position = UDim2.new(0, 20, 0, 62)
@@ -15,7 +14,6 @@ statusLabel.Font = Enum.Font.GothamMedium
 statusLabel.TextWrapped = true
 statusLabel.Parent = mainFrame
 
--- Progress Bar Background
 local barBg = Instance.new("Frame")
 barBg.Size = UDim2.new(1, -40, 0, 6)
 barBg.Position = UDim2.new(0, 20, 1, -40)
@@ -27,7 +25,6 @@ local barBgCorner = Instance.new("UICorner")
 barBgCorner.CornerRadius = UDim.new(1, 0)
 barBgCorner.Parent = barBg
 
--- Progress Bar Fill (with gradient)
 local barFill = Instance.new("Frame")
 barFill.Size = UDim2.new(0, 0, 1, 0)
 barFill.BackgroundColor3 = Color3.fromRGB(50, 195, 90)
@@ -45,7 +42,6 @@ barGradient.Color = ColorSequence.new({
 })
 barGradient.Parent = barFill
 
--- Execute Logic
 task.spawn(function()
     TweenService:Create(barFill, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0.6, 0, 1, 0)
@@ -53,10 +49,9 @@ task.spawn(function()
 
     task.wait(1)
 
-    -- Game Database mapping
     local supportedGames = {
         [78567276888799] = "78567276888799.lua",
-    	[91698952875688] = "91698952875688.lua"
+        [91698952875688] = "91698952875688.lua"
     }
 
     local scriptFile = supportedGames[game.PlaceId]
