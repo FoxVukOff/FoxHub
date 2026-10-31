@@ -934,6 +934,47 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     local tracersRow, tracersSwitch, tracersCircle = ui.createSubToggleRow(options, "Tracers", 2)
     local colorSelector, getColor = ui.createColorSelector(options, "Color", colorOptions, defaultColorIndex, 3)
 
+    local arrowBtn = Instance.new("TextButton")
+    arrowBtn.Size = UDim2.new(0, 26, 0, 26)
+    arrowBtn.Position = UDim2.new(1, -102, 0.5, -13)
+    arrowBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+    arrowBtn.BorderSizePixel = 0
+    arrowBtn.Text = "▾"
+    arrowBtn.TextColor3 = Color3.fromRGB(190, 190, 215)
+    arrowBtn.TextSize = 14
+    arrowBtn.Font = Enum.Font.GothamBold
+    arrowBtn.AutoButtonColor = false
+    arrowBtn.Rotation = -90
+    arrowBtn.Parent = mainRow
+
+    local arrowCorner = Instance.new("UICorner")
+    arrowCorner.CornerRadius = UDim.new(0, 8)
+    arrowCorner.Parent = arrowBtn
+
+    local optionsOpen = false
+    options.Visible = false
+
+    arrowBtn.MouseEnter:Connect(function()
+        TweenService:Create(arrowBtn, TweenInfo.new(0.15), {
+            BackgroundColor3 = Color3.fromRGB(40, 40, 56)
+        }):Play()
+    end)
+
+    arrowBtn.MouseLeave:Connect(function()
+        TweenService:Create(arrowBtn, TweenInfo.new(0.15), {
+            BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+        }):Play()
+    end)
+
+    arrowBtn.MouseButton1Click:Connect(function()
+        optionsOpen = not optionsOpen
+        options.Visible = optionsOpen
+
+        TweenService:Create(arrowBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Rotation = optionsOpen and 0 or -90
+        }):Play()
+    end)
+
     ui.setToggleState(state.enabled, mainSwitch, mainCircle)
     ui.setSubToggleState(state.model, modelSwitch, modelCircle)
     ui.setSubToggleState(state.boxes, boxesSwitch, boxesCircle)
