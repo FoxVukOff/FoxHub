@@ -9,7 +9,7 @@ local player = Players.LocalPlayer
 local screenGui, mainFrame, header = ui.createWindow(
     "FoxHubBahkruumsGui",
     "🦊 FoxHub - Bahkruums",
-    UDim2.new(0, 360, 0, 640)
+    UDim2.new(0, 360, 0, 470)
 )
 
 ui.addCloseButton(header, mainFrame, screenGui)
@@ -158,7 +158,11 @@ local function getInputDirection()
     return Vector3.zero
 end
 
-local function safeMoveRoot(root, character, step)
+local speedParams = RaycastParams.new()
+speedParams.FilterType = Enum.RaycastFilterType.Exclude
+local lastSpeedCharacter = nil
+
+local function safeMoveRoot(root, step)
     local remaining = step
     local maxChunk = 20
     local guard = 0
@@ -172,12 +176,8 @@ local function safeMoveRoot(root, character, step)
             chunk = remaining.Unit * maxChunk
         end
 
-        local params = RaycastParams.new()
-        params.FilterDescendantsInstances = {character}
-        params.FilterType = Enum.RaycastFilterType.Exclude
-
         local ok, ray = pcall(function()
-            return workspace:Raycast(root.Position, chunk, params)
+            return workspace:Raycast(root.Position, chunk, speedParams)
         end)
 
         if ok and ray then
@@ -210,6 +210,11 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 
     if not character then
         return
+    end
+
+    if character ~= lastSpeedCharacter then
+        lastSpeedCharacter = character
+        speedParams.FilterDescendantsInstances = {character}
     end
 
     local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -249,11 +254,12 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
         return
     end
 
-    safeMoveRoot(root, character, step)
+    safeMoveRoot(root, step)
 end)
 
 local drawingSupported = false
 local triangleSupported = false
+local squareSupported = false
 
 pcall(function()
     local testLine = Drawing.new("Line")
@@ -264,6 +270,12 @@ pcall(function()
         local testTriangle = Drawing.new("Triangle")
         testTriangle.Visible = false
         triangleSupported = true
+    end)
+
+    pcall(function()
+        local testSquare = Drawing.new("Square")
+        testSquare.Visible = false
+        squareSupported = true
     end)
 end)
 
@@ -280,11 +292,17 @@ if not drawingSupported then
     warnLabel.Parent = container
 end
 
+local LINE_CAP = 1500
+local TRI_CAP = 4000
+local SQ_CAP = 200
+
 local linePool = {}
 local trianglePool = {}
+local squarePool = {}
 
 local currentLineIndex = 0
 local currentTriangleIndex = 0
+local currentSquareIndex = 0
 
 local function acquireLine(index)
     local line = linePool[index]
@@ -314,6 +332,20 @@ local function acquireTriangle(index)
     return triangle
 end
 
+local function acquireSquare(index)
+    local square = squarePool[index]
+
+    if not square then
+        square = Drawing.new("Square")
+        square.Visible = false
+        squarePool[index] = square
+    end
+
+    square.Visible = true
+
+    return square
+end
+
 local function hideLinesAfter(index)
     for i = index + 1, #linePool do
         linePool[i].Visible = false
@@ -326,14 +358,40 @@ local function hideTrianglesAfter(index)
     end
 end
 
+local function hideSquaresAfter(index)
+    for i = index + 1, #squarePool do
+        squarePool[i].Visible = false
+    end
+end
+
 local function acquireCurrentLine()
+    if currentLineIndex >= LINE_CAP then
+        return nil
+    end
+
     currentLineIndex = currentLineIndex + 1
+
     return acquireLine(currentLineIndex)
 end
 
 local function acquireCurrentTriangle()
+    if currentTriangleIndex >= TRI_CAP then
+        return nil
+    end
+
     currentTriangleIndex = currentTriangleIndex + 1
+
     return acquireTriangle(currentTriangleIndex)
+end
+
+local function acquireCurrentSquare()
+    if currentSquareIndex >= SQ_CAP then
+        return nil
+    end
+
+    currentSquareIndex = currentSquareIndex + 1
+
+    return acquireSquare(currentSquareIndex)
 end
 
 local boxOffsets = {
@@ -394,7 +452,22 @@ local function getScreenCorners(cf, size, camera)
     return screenPoints
 end
 
-local function drawPartHighlight(part, camera, color, useFill)
+local function getScreenHeight(cf, size, camera)
+    local top = camera:WorldToViewportPoint((cf * CFrame.new(0, size.Y * 0.5, 0)).Position)
+    local bottom = camera:WorldToViewportPoint((cf * CFrame.new(0, -size.Y * 0.5, 0)).Position)
+
+    if top.Z <= 0 or bottom.Z <= 0 then
+        return nil
+    end
+
+    return math.abs(top.Y - bottom.Y)
+end
+
+local function drawPartHighlight(part, camera, color, useFill, thickness)
+    if currentLineIndex >= LINE_CAP then
+        return
+    end
+
     if not part or not part.Parent then
         return
     end
@@ -413,34 +486,108 @@ local function drawPartHighlight(part, camera, color, useFill)
 
     if useFill then
         for _, face in ipairs(boxFaces) do
+            if currentTriangleIndex >= TRI_CAP then
+                break
+            end
+
             local a = screenPoints[face[1]]
             local b = screenPoints[face[2]]
             local c = screenPoints[face[3]]
             local d = screenPoints[face[4]]
 
             local tri1 = acquireCurrentTriangle()
-            tri1.PointA = a
-            tri1.PointB = b
-            tri1.PointC = c
-            tri1.Color = color
-            tri1.Transparency = 0.42
+
+            if tri1 then
+                tri1.PointA = a
+                tri1.PointB = b
+                tri1.PointC = c
+                tri1.Color = color
+                tri1.Transparency = 0.45
+            end
 
             local tri2 = acquireCurrentTriangle()
-            tri2.PointA = a
-            tri2.PointB = c
-            tri2.PointC = d
-            tri2.Color = color
-            tri2.Transparency = 0.42
+
+            if tri2 then
+                tri2.PointA = a
+                tri2.PointB = c
+                tri2.PointC = d
+                tri2.Color = color
+                tri2.Transparency = 0.45
+            end
         end
     end
 
     for _, edge in ipairs(boxEdges) do
         local line = acquireCurrentLine()
+
+        if not line then
+            return
+        end
+
         line.From = screenPoints[edge[1]]
         line.To = screenPoints[edge[2]]
         line.Color = color
-        line.Thickness = 1.5
+        line.Thickness = thickness
         line.Transparency = 1
+    end
+end
+
+local function drawSoftSilhouette(cf, size, camera, color, opacity)
+    local screenPoints = getScreenCorners(cf, size, camera)
+
+    if not screenPoints then
+        return
+    end
+
+    local minX, minY = math.huge, math.huge
+    local maxX, maxY = -math.huge, -math.huge
+
+    for i = 1, #screenPoints do
+        local p = screenPoints[i]
+
+        if p.X < minX then minX = p.X end
+        if p.Y < minY then minY = p.Y end
+        if p.X > maxX then maxX = p.X end
+        if p.Y > maxY then maxY = p.Y end
+    end
+
+    local w = maxX - minX
+    local h = maxY - minY
+
+    if w <= 0 or h <= 0 then
+        return
+    end
+
+    if squareSupported then
+        local square = acquireCurrentSquare()
+
+        if square then
+            square.Filled = true
+            square.Position = Vector2.new(minX, minY)
+            square.Size = Vector2.new(w, h)
+            square.Color = color
+            square.Transparency = opacity
+        end
+    else
+        local a = Vector2.new(minX, minY)
+        local b = Vector2.new(maxX, minY)
+        local c = Vector2.new(maxX, maxY)
+        local d = Vector2.new(minX, maxY)
+        local edges = {{a, b}, {b, c}, {c, d}, {d, a}}
+
+        for _, e in ipairs(edges) do
+            local line = acquireCurrentLine()
+
+            if not line then
+                return
+            end
+
+            line.From = e[1]
+            line.To = e[2]
+            line.Color = color
+            line.Thickness = 1.2
+            line.Transparency = 1
+        end
     end
 end
 
@@ -481,6 +628,11 @@ local function drawBoundingBox(object, camera, color)
 
     for _, edge in ipairs(boxEdges) do
         local line = acquireCurrentLine()
+
+        if not line then
+            return
+        end
+
         line.From = screenPoints[edge[1]]
         line.To = screenPoints[edge[2]]
         line.Color = color
@@ -506,6 +658,11 @@ local function drawTracer(object, camera, color)
     local viewportSize = camera.ViewportSize
 
     local line = acquireCurrentLine()
+
+    if not line then
+        return
+    end
+
     line.From = Vector2.new(viewportSize.X * 0.5, viewportSize.Y)
     line.To = Vector2.new(bottomViewport.X, bottomViewport.Y)
     line.Color = color
@@ -515,6 +672,12 @@ end
 
 local partCache = {}
 
+local function clearTable(t)
+    for i = #t, 1, -1 do
+        t[i] = nil
+    end
+end
+
 local function getObjectParts(object, maxParts)
     if not object or not object.Parent then
         return {}
@@ -523,7 +686,7 @@ local function getObjectParts(object, maxParts)
     local now = tick()
     local cached = partCache[object]
 
-    if cached and cached.time > now - 0.75 then
+    if cached and cached.time > now - 1 then
         return cached.parts
     end
 
@@ -557,46 +720,90 @@ local function getObjectParts(object, maxParts)
     return parts
 end
 
-local function getClarkTargets()
-    local targets = {}
+local function isSelf(child)
+    return child == player.Character or child.Name == player.Name
+end
+
+local function getClarkTargets(buffer)
+    clearTable(buffer)
+
     local liveAI = workspace:FindFirstChild("LiveAI")
     local clark = liveAI and liveAI:FindFirstChild("Clark")
 
     if clark then
-        table.insert(targets, clark)
+        table.insert(buffer, clark)
     end
 
-    return targets
+    return buffer
 end
 
-local function getLiveTargets()
-    local targets = {}
+local function getLiveTargets(buffer)
+    clearTable(buffer)
+
     local live = workspace:FindFirstChild("Live")
 
     if live then
         for _, child in ipairs(live:GetChildren()) do
-            if child:IsA("Model") or child:IsA("BasePart") then
-                table.insert(targets, child)
+            if (child:IsA("Model") or child:IsA("BasePart")) and not isSelf(child) then
+                table.insert(buffer, child)
             end
         end
     end
 
-    return targets
+    return buffer
 end
 
-local function getLiveClarkTargets()
-    local targets = {}
+local function getLiveClarkTargets(buffer)
+    clearTable(buffer)
+
     local liveClark = workspace:FindFirstChild("LiveClark")
 
     if liveClark then
         for _, child in ipairs(liveClark:GetChildren()) do
-            if child:IsA("Model") or child:IsA("BasePart") then
-                table.insert(targets, child)
+            if (child:IsA("Model") or child:IsA("BasePart")) and not isSelf(child) then
+                table.insert(buffer, child)
             end
         end
     end
 
-    return targets
+    return buffer
+end
+
+local function drawModelHighlight(object, camera, color, category)
+    local cf, size = getObjectBoundingData(object)
+
+    if not cf or not size or size.Magnitude <= 0 then
+        return
+    end
+
+    local centerViewport = camera:WorldToViewportPoint(cf.Position)
+
+    if centerViewport.Z <= 0 then
+        return
+    end
+
+    local screenH = getScreenHeight(cf, size, camera)
+
+    if not screenH then
+        return
+    end
+
+    if screenH < category.lodFar then
+        drawSoftSilhouette(cf, size, camera, color, 0.5)
+    elseif screenH < category.lodMid then
+        local parts = getObjectParts(object, category.midParts)
+
+        for _, part in ipairs(parts) do
+            drawPartHighlight(part, camera, color, false, 1.3)
+        end
+    else
+        local parts = getObjectParts(object, category.maxParts)
+        local useFill = triangleSupported and #parts <= category.maxFillParts
+
+        for _, part in ipairs(parts) do
+            drawPartHighlight(part, camera, color, useFill, 1.5)
+        end
+    end
 end
 
 local categories = {
@@ -604,35 +811,42 @@ local categories = {
         state = clarkState,
         getColor = getClarkColor,
         getTargets = getClarkTargets,
-        maxParts = 70,
-        maxFillParts = 20
+        buffer = {},
+        maxParts = 60,
+        maxFillParts = 18,
+        midParts = 14,
+        lodFar = 110,
+        lodMid = 240
     },
     {
         state = playersState,
         getColor = getPlayersColor,
         getTargets = getLiveTargets,
-        maxParts = 35,
-        maxFillParts = 14
+        buffer = {},
+        maxParts = 30,
+        maxFillParts = 12,
+        midParts = 10,
+        lodFar = 110,
+        lodMid = 240
     },
     {
         state = clarkPlayersState,
         getColor = getClarkPlayersColor,
         getTargets = getLiveClarkTargets,
-        maxParts = 35,
-        maxFillParts = 14
+        buffer = {},
+        maxParts = 30,
+        maxFillParts = 12,
+        midParts = 10,
+        lodFar = 110,
+        lodMid = 240
     }
 }
 
 local renderConnection = RunService.RenderStepped:Connect(function()
-    if not guiOpen then
+    if not guiOpen or not drawingSupported then
         hideLinesAfter(0)
         hideTrianglesAfter(0)
-        return
-    end
-
-    if not drawingSupported then
-        hideLinesAfter(0)
-        hideTrianglesAfter(0)
+        hideSquaresAfter(0)
         return
     end
 
@@ -641,32 +855,31 @@ local renderConnection = RunService.RenderStepped:Connect(function()
     if not camera then
         hideLinesAfter(0)
         hideTrianglesAfter(0)
+        hideSquaresAfter(0)
         return
     end
 
     currentLineIndex = 0
     currentTriangleIndex = 0
+    currentSquareIndex = 0
 
     for _, category in ipairs(categories) do
-        if category.state.enabled then
+        local state = category.state
+
+        if state.enabled and (state.model or state.boxes or state.tracers) then
             local color = category.getColor()
-            local targets = category.getTargets()
+            local targets = category.getTargets(category.buffer)
 
             for _, object in ipairs(targets) do
-                if category.state.model then
-                    local parts = getObjectParts(object, category.maxParts)
-                    local useFill = triangleSupported and #parts <= category.maxFillParts
-
-                    for _, part in ipairs(parts) do
-                        drawPartHighlight(part, camera, color, useFill)
-                    end
+                if state.model then
+                    drawModelHighlight(object, camera, color, category)
                 end
 
-                if category.state.boxes then
+                if state.boxes then
                     drawBoundingBox(object, camera, color)
                 end
 
-                if category.state.tracers then
+                if state.tracers then
                     drawTracer(object, camera, color)
                 end
             end
@@ -675,6 +888,7 @@ local renderConnection = RunService.RenderStepped:Connect(function()
 
     hideLinesAfter(currentLineIndex)
     hideTrianglesAfter(currentTriangleIndex)
+    hideSquaresAfter(currentSquareIndex)
 end)
 
 pcall(function()
@@ -692,5 +906,6 @@ pcall(function()
 
         hideLinesAfter(0)
         hideTrianglesAfter(0)
+        hideSquaresAfter(0)
     end)
 end)
