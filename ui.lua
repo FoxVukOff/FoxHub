@@ -8,6 +8,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 function ui.spawnConfetti(parentGui)
     local mouse = player:GetMouse()
+
     local colors = {
         Color3.fromRGB(255, 80, 120),
         Color3.fromRGB(80, 200, 255),
@@ -15,30 +16,43 @@ function ui.spawnConfetti(parentGui)
         Color3.fromRGB(120, 255, 150),
         Color3.fromRGB(200, 120, 255)
     }
+
     for i = 1, 18 do
         local particle = Instance.new("Frame")
         particle.Size = UDim2.new(0, math.random(4, 8), 0, math.random(10, 20))
         particle.BackgroundColor3 = colors[math.random(1, #colors)]
         particle.BorderSizePixel = 0
         particle.ZIndex = 20
+
         local pCorner = Instance.new("UICorner")
         pCorner.CornerRadius = UDim.new(0, 3)
         pCorner.Parent = particle
+
         local absPos = parentGui.AbsolutePosition
         local startX = mouse.X - absPos.X
         local startY = mouse.Y - absPos.Y
+
         particle.Position = UDim2.new(0, startX, 0, startY)
         particle.Parent = parentGui
+
         local angle = math.rad(math.random(0, 360))
         local speed = math.random(40, 100)
+
         local targetX = startX + math.cos(angle) * speed
         local targetY = startY + math.sin(angle) * speed + math.random(30, 70)
-        local tween = TweenService:Create(particle, TweenInfo.new(math.random(50, 90) / 100, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Position = UDim2.new(0, targetX, 0, targetY),
-            Rotation = math.random(-360, 360),
-            BackgroundTransparency = 1
-        })
+
+        local tween = TweenService:Create(
+            particle,
+            TweenInfo.new(math.random(50, 90) / 100, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                Position = UDim2.new(0, targetX, 0, targetY),
+                Rotation = math.random(-360, 360),
+                BackgroundTransparency = 1
+            }
+        )
+
         tween:Play()
+
         tween.Completed:Connect(function()
             particle:Destroy()
         end)
@@ -47,10 +61,15 @@ end
 
 function ui.applyHoverEffect(frame, defaultColor, hoverColor)
     frame.MouseEnter:Connect(function()
-        TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {BackgroundColor3 = hoverColor}):Play()
+        TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = hoverColor
+        }):Play()
     end)
+
     frame.MouseLeave:Connect(function()
-        TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {BackgroundColor3 = defaultColor}):Play()
+        TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = defaultColor
+        }):Play()
     end)
 end
 
@@ -67,7 +86,7 @@ function ui.createWindow(guiName, titleText, windowSize)
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = windowSize
-    mainFrame.Position = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2 + 10)
+    mainFrame.Position = UDim2.new(0.5, -windowSize.X.Offset / 2, 0.5, -windowSize.Y.Offset / 2 + 10)
     mainFrame.BackgroundTransparency = 1
     mainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
     mainFrame.BorderSizePixel = 0
@@ -99,11 +118,17 @@ function ui.createWindow(guiName, titleText, windowSize)
     shadowCorner.Parent = shadowFrame
 
     TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2),
+        Position = UDim2.new(0.5, -windowSize.X.Offset / 2, 0.5, -windowSize.Y.Offset / 2),
         BackgroundTransparency = 0
     }):Play()
-    TweenService:Create(mainStroke, TweenInfo.new(0.5), {Transparency = 0.3}):Play()
-    TweenService:Create(shadowFrame, TweenInfo.new(0.6), {BackgroundTransparency = 0.6}):Play()
+
+    TweenService:Create(mainStroke, TweenInfo.new(0.5), {
+        Transparency = 0.3
+    }):Play()
+
+    TweenService:Create(shadowFrame, TweenInfo.new(0.6), {
+        BackgroundTransparency = 0.6
+    }):Play()
 
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, 46)
@@ -170,11 +195,13 @@ function ui.addCloseButton(header, mainFrame, screenGui)
 
     closeBtn.MouseButton1Click:Connect(function()
         ui.spawnConfetti(closeBtn)
+
         TweenService:Create(mainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1
         }):Play()
+
         task.wait(0.35)
         screenGui:Destroy()
     end)
@@ -185,6 +212,7 @@ function ui.addCloseButton(header, mainFrame, screenGui)
             Size = UDim2.new(0, 30, 0, 30)
         }):Play()
     end)
+
     closeBtn.MouseLeave:Connect(function()
         TweenService:Create(closeBtn, TweenInfo.new(0.2), {
             BackgroundTransparency = 0.8,
@@ -283,16 +311,26 @@ end
 function ui.setToggleState(state, switchBg, circle)
     local bgTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
     local circTweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
     if state then
-        TweenService:Create(switchBg, bgTweenInfo, {BackgroundColor3 = Color3.fromRGB(60, 200, 100)}):Play()
-        TweenService:Create(circle, circTweenInfo, {Position = UDim2.new(1, -25, 0.5, -11)}):Play()
+        TweenService:Create(switchBg, bgTweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(60, 200, 100)
+        }):Play()
+
+        TweenService:Create(circle, circTweenInfo, {
+            Position = UDim2.new(1, -25, 0.5, -11)
+        }):Play()
     else
-        TweenService:Create(switchBg, bgTweenInfo, {BackgroundColor3 = Color3.fromRGB(180, 50, 50)}):Play()
-        TweenService:Create(circle, circTweenInfo, {Position = UDim2.new(0, 3, 0.5, -11)}):Play()
+        TweenService:Create(switchBg, bgTweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        }):Play()
+
+        TweenService:Create(circle, circTweenInfo, {
+            Position = UDim2.new(0, 3, 0.5, -11)
+        }):Play()
     end
 end
 
--- Always-visible dimmed whitelist panel with multi-select (2x2 grid)
 function ui.createWhitelistPanel(container, caption, options, defaultSelection, order, onChange)
     local panel = Instance.new("Frame")
     panel.Name = "WhitelistPanel"
@@ -367,6 +405,7 @@ function ui.createWhitelistPanel(container, caption, options, defaultSelection, 
     gridLayout.Parent = grid
 
     local selection = {}
+
     for _, idx in ipairs(defaultSelection or {}) do
         table.insert(selection, idx)
     end
@@ -375,13 +414,17 @@ function ui.createWhitelistPanel(container, caption, options, defaultSelection, 
 
     local function updateVisuals()
         countLabel.Text = #selection .. "/" .. #options
+
         for i, cellData in ipairs(cells) do
             local selected = table.find(selection, i) ~= nil
+
             cellData.check.Text = selected and "✓" or ""
+
             TweenService:Create(cellData.button, TweenInfo.new(0.2), {
                 BackgroundColor3 = selected and Color3.fromRGB(38, 38, 56) or Color3.fromRGB(24, 24, 32),
                 BackgroundTransparency = selected and 0.15 or 0.45
             }):Play()
+
             TweenService:Create(cellData.label, TweenInfo.new(0.2), {
                 TextColor3 = selected and Color3.fromRGB(215, 215, 235) or Color3.fromRGB(150, 150, 170)
             }):Play()
@@ -424,34 +467,352 @@ function ui.createWhitelistPanel(container, caption, options, defaultSelection, 
         label.TextTruncate = Enum.TextTruncate.AtEnd
         label.Parent = cell
 
-        table.insert(cells, {button = cell, check = check, label = label})
+        table.insert(cells, {
+            button = cell,
+            check = check,
+            label = label
+        })
 
         cell.MouseButton1Click:Connect(function()
             local idx = table.find(selection, i)
+
             if idx then
                 table.remove(selection, idx)
             else
                 table.insert(selection, i)
             end
+
             updateVisuals()
-            if onChange then onChange(selection) end
+
+            if onChange then
+                onChange(selection)
+            end
         end)
 
         cell.MouseEnter:Connect(function()
             if not table.find(selection, i) then
-                TweenService:Create(cell, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play()
+                TweenService:Create(cell, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.25
+                }):Play()
             end
         end)
+
         cell.MouseLeave:Connect(function()
             if not table.find(selection, i) then
-                TweenService:Create(cell, TweenInfo.new(0.15), {BackgroundTransparency = 0.45}):Play()
+                TweenService:Create(cell, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.45
+                }):Play()
             end
         end)
     end
 
     updateVisuals()
 
-    return panel, function() return selection end
+    return panel, function()
+        return selection
+    end
+end
+
+function ui.createInputRow(container, name, defaultText, buttonText, order, onApply)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 52)
+    row.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    row.BorderSizePixel = 0
+    row.LayoutOrder = order
+    row.Parent = container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = row
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(50, 50, 70)
+    stroke.Transparency = 0.5
+    stroke.Parent = row
+
+    ui.applyHoverEffect(row, Color3.fromRGB(20, 20, 28), Color3.fromRGB(28, 28, 38))
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.55, -12, 1, 0)
+    label.Position = UDim2.new(0, 16, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(220, 220, 240)
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamMedium
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0, 70, 0, 28)
+    textBox.Position = UDim2.new(1, -172, 0.5, -14)
+    textBox.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+    textBox.BorderSizePixel = 0
+    textBox.Text = defaultText
+    textBox.PlaceholderText = "0"
+    textBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 130)
+    textBox.TextColor3 = Color3.fromRGB(220, 220, 240)
+    textBox.TextSize = 12
+    textBox.Font = Enum.Font.Gotham
+    textBox.ClearTextOnFocus = false
+    textBox.TextXAlignment = Enum.TextXAlignment.Center
+    textBox.Parent = row
+
+    local textCorner = Instance.new("UICorner")
+    textCorner.CornerRadius = UDim.new(0, 8)
+    textCorner.Parent = textBox
+
+    local textStroke = Instance.new("UIStroke")
+    textStroke.Color = Color3.fromRGB(45, 45, 62)
+    textStroke.Transparency = 0.35
+    textStroke.Parent = textBox
+
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 76, 0, 28)
+    button.Position = UDim2.new(1, -88, 0.5, -14)
+    button.BackgroundColor3 = Color3.fromRGB(50, 195, 90)
+    button.BackgroundTransparency = 0.16
+    button.BorderSizePixel = 0
+    button.Text = buttonText
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 12
+    button.Font = Enum.Font.GothamBold
+    button.AutoButtonColor = false
+    button.Parent = row
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0
+        }):Play()
+    end)
+
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.16
+        }):Play()
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        ui.spawnConfetti(button)
+
+        if onApply then
+            onApply(textBox.Text)
+        end
+    end)
+
+    textBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed and onApply then
+            onApply(textBox.Text)
+        end
+    end)
+
+    return row, textBox, button
+end
+
+function ui.createColorPanel(container, caption, colors, defaultIndex, order, onChange)
+    if not colors or #colors == 0 then
+        colors = {
+            {
+                name = "White",
+                color = Color3.fromRGB(240, 240, 240)
+            }
+        }
+    end
+
+    local panel = Instance.new("Frame")
+    panel.Name = "ColorPanel"
+    panel.Size = UDim2.new(1, 0, 0, 0)
+    panel.AutomaticSize = Enum.AutomaticSize.Y
+    panel.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+    panel.BackgroundTransparency = 0.35
+    panel.BorderSizePixel = 0
+    panel.LayoutOrder = order
+    panel.Parent = container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = panel
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(45, 45, 62)
+    stroke.Transparency = 0.65
+    stroke.Parent = panel
+
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = panel
+
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.PaddingBottom = UDim.new(0, 10)
+    padding.PaddingLeft = UDim.new(0, 12)
+    padding.PaddingRight = UDim.new(0, 12)
+    padding.Parent = panel
+
+    local captionRow = Instance.new("Frame")
+    captionRow.Size = UDim2.new(1, 0, 0, 16)
+    captionRow.BackgroundTransparency = 1
+    captionRow.LayoutOrder = 0
+    captionRow.Parent = panel
+
+    local captionLabel = Instance.new("TextLabel")
+    captionLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    captionLabel.Position = UDim2.new(0, 2, 0, 0)
+    captionLabel.BackgroundTransparency = 1
+    captionLabel.Text = caption
+    captionLabel.TextColor3 = Color3.fromRGB(150, 150, 175)
+    captionLabel.TextSize = 11
+    captionLabel.Font = Enum.Font.GothamMedium
+    captionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    captionLabel.Parent = captionRow
+
+    local stateLabel = Instance.new("TextLabel")
+    stateLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    stateLabel.Position = UDim2.new(0.6, 0, 0, 0)
+    stateLabel.BackgroundTransparency = 1
+    stateLabel.Text = ""
+    stateLabel.TextColor3 = Color3.fromRGB(120, 120, 145)
+    stateLabel.TextSize = 10
+    stateLabel.Font = Enum.Font.Gotham
+    stateLabel.TextXAlignment = Enum.TextXAlignment.Right
+    stateLabel.Parent = captionRow
+
+    local grid = Instance.new("Frame")
+    grid.Size = UDim2.new(1, 0, 0, 0)
+    grid.AutomaticSize = Enum.AutomaticSize.Y
+    grid.BackgroundTransparency = 1
+    grid.LayoutOrder = 1
+    grid.Parent = panel
+
+    local gridLayout = Instance.new("UIGridLayout")
+    gridLayout.CellSize = UDim2.new(0.25, -6, 0, 32)
+    gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+    gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    gridLayout.Parent = grid
+
+    local selected = defaultIndex or 1
+
+    if selected < 1 then
+        selected = 1
+    end
+
+    if selected > #colors then
+        selected = #colors
+    end
+
+    local cells = {}
+
+    local function getEntry(index)
+        local entry = colors[index]
+
+        if typeof(entry) == "Color3" then
+            return {
+                name = "Color " .. index,
+                color = entry
+            }
+        end
+
+        return {
+            name = entry.name or ("Color " .. index),
+            color = entry.color or Color3.new(1, 1, 1)
+        }
+    end
+
+    local function updateVisuals()
+        local entry = getEntry(selected)
+        stateLabel.Text = entry.name
+
+        for i, cellData in ipairs(cells) do
+            local isSelected = (i == selected)
+
+            cellData.check.Text = isSelected and "✓" or ""
+
+            TweenService:Create(cellData.button, TweenInfo.new(0.18), {
+                BackgroundTransparency = isSelected and 0 or 0.28
+            }):Play()
+
+            TweenService:Create(cellData.stroke, TweenInfo.new(0.18), {
+                Transparency = isSelected and 0 or 0.55,
+                Thickness = isSelected and 1.6 or 1
+            }):Play()
+        end
+    end
+
+    for i = 1, #colors do
+        local entry = getEntry(i)
+
+        local cell = Instance.new("TextButton")
+        cell.BackgroundColor3 = entry.color
+        cell.BackgroundTransparency = 0.28
+        cell.BorderSizePixel = 0
+        cell.AutoButtonColor = false
+        cell.Text = ""
+        cell.LayoutOrder = i
+        cell.Parent = grid
+
+        local cellCorner = Instance.new("UICorner")
+        cellCorner.CornerRadius = UDim.new(0, 8)
+        cellCorner.Parent = cell
+
+        local cellStroke = Instance.new("UIStroke")
+        cellStroke.Color = Color3.fromRGB(235, 235, 255)
+        cellStroke.Thickness = 1
+        cellStroke.Transparency = 0.55
+        cellStroke.Parent = cell
+
+        local brightness = (entry.color.R * 0.299) + (entry.color.G * 0.587) + (entry.color.B * 0.114)
+
+        local check = Instance.new("TextLabel")
+        check.Size = UDim2.new(1, 0, 1, 0)
+        check.BackgroundTransparency = 1
+        check.Text = ""
+        check.TextColor3 = brightness > 0.62 and Color3.fromRGB(15, 15, 20) or Color3.fromRGB(245, 245, 255)
+        check.TextSize = 14
+        check.Font = Enum.Font.GothamBold
+        check.Parent = cell
+
+        table.insert(cells, {
+            button = cell,
+            stroke = cellStroke,
+            check = check
+        })
+
+        cell.MouseButton1Click:Connect(function()
+            selected = i
+            updateVisuals()
+
+            if onChange then
+                onChange(getEntry(selected).color)
+            end
+        end)
+
+        cell.MouseEnter:Connect(function()
+            if i ~= selected then
+                TweenService:Create(cell, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.12
+                }):Play()
+            end
+        end)
+
+        cell.MouseLeave:Connect(function()
+            if i ~= selected then
+                TweenService:Create(cell, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.28
+                }):Play()
+            end
+        end)
+    end
+
+    updateVisuals()
+
+    return panel, function()
+        return getEntry(selected).color
+    end
 end
 
 return ui
