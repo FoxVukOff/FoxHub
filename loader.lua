@@ -55,7 +55,8 @@ task.spawn(function()
 
     -- Game Database mapping
     local supportedGames = {
-        [78567276888799] = "78567276888799.lua"
+        [78567276888799] = "78567276888799.lua",
+    	[91698952875688] = "91698952875688.lua"
     }
 
     local scriptFile = supportedGames[game.PlaceId]
