@@ -259,6 +259,7 @@ end)
 
 local drawingSupported = false
 local triangleSupported = false
+local textSupported = false
 
 pcall(function()
     local testLine = Drawing.new("Line")
@@ -269,6 +270,12 @@ pcall(function()
         local testTriangle = Drawing.new("Triangle")
         testTriangle.Visible = false
         triangleSupported = true
+    end)
+
+    pcall(function()
+        local testText = Drawing.new("Text")
+        testText.Visible = false
+        textSupported = true
     end)
 end)
 
@@ -287,12 +294,15 @@ end
 
 local LINE_CAP = 1500
 local TRI_CAP = 4000
+local TEXT_CAP = 200
 
 local linePool = {}
 local trianglePool = {}
+local textPool = {}
 
 local currentLineIndex = 0
 local currentTriangleIndex = 0
+local currentTextIndex = 0
 
 local function acquireLine(index)
     local line = linePool[index]
@@ -322,6 +332,20 @@ local function acquireTriangle(index)
     return triangle
 end
 
+local function acquireText(index)
+    local text = textPool[index]
+
+    if not text then
+        text = Drawing.new("Text")
+        text.Visible = false
+        textPool[index] = text
+    end
+
+    text.Visible = true
+
+    return text
+end
+
 local function hideLinesAfter(index)
     for i = index + 1, #linePool do
         linePool[i].Visible = false
@@ -331,6 +355,12 @@ end
 local function hideTrianglesAfter(index)
     for i = index + 1, #trianglePool do
         trianglePool[i].Visible = false
+    end
+end
+
+local function hideTextsAfter(index)
+    for i = index + 1, #textPool do
+        textPool[i].Visible = false
     end
 end
 
@@ -352,6 +382,16 @@ local function acquireCurrentTriangle()
     currentTriangleIndex = currentTriangleIndex + 1
 
     return acquireTriangle(currentTriangleIndex)
+end
+
+local function acquireCurrentText()
+    if currentTextIndex >= TEXT_CAP then
+        return nil
+    end
+
+    currentTextIndex = currentTextIndex + 1
+
+    return acquireText(currentTextIndex)
 end
 
 local boxOffsets = {
@@ -520,13 +560,7 @@ local function getObjectBoundingData(object)
     return nil, nil
 end
 
-local function drawBoundingBox(object, camera, color)
-    local cf, size = getObjectBoundingData(object)
-
-    if not cf or not size or size.Magnitude <= 0 then
-        return
-    end
-
+local function drawBoundingBox(cf, size, camera, color)
     local screenPoints = getScreenCorners(cf, size, camera)
 
     if not screenPoints then
@@ -548,13 +582,7 @@ local function drawBoundingBox(object, camera, color)
     end
 end
 
-local function drawTracer(object, camera, color)
-    local cf, size = getObjectBoundingData(object)
-
-    if not cf or not size or size.Magnitude <= 0 then
-        return
-    end
-
+local function drawTracer(cf, size, camera, color)
     local bottomPosition = (cf * CFrame.new(0, -size.Y / 2, 0)).Position
     local bottomViewport = camera:WorldToViewportPoint(bottomPosition)
 
@@ -575,6 +603,51 @@ local function drawTracer(object, camera, color)
     line.Color = color
     line.Thickness = 1.3
     line.Transparency = 1
+end
+
+local function drawTargetInfo(object, cf, size, camera, color, state, origin)
+    local topViewport = camera:WorldToViewportPoint((cf * CFrame.new(0, size.Y * 0.5, 0)).Position)
+
+    if topViewport.Z <= 0 then
+        return
+    end
+
+    local lines = {}
+
+    if state.name and object.Name ~= "" then
+        table.insert(lines, object.Name)
+    end
+
+    if state.distance then
+        local dist = (cf.Position - origin).Magnitude
+        table.insert(lines, math.floor(dist + 0.5) .. " studs")
+    end
+
+    if #lines == 0 then
+        return
+    end
+
+    local x = topViewport.X
+    local topY = topViewport.Y
+    local lineHeight = 14
+
+    for i, lineText in ipairs(lines) do
+        local text = acquireCurrentText()
+
+        if not text then
+            return
+        end
+
+        text.Text = lineText
+        text.Position = Vector2.new(x, topY - (#lines - i) * lineHeight - lineHeight)
+        text.Color = color
+        text.Center = true
+        text.Outline = true
+        text.OutlineColor = Color3.fromRGB(0, 0, 0)
+        text.Size = 13
+        text.Font = 2
+        text.Transparency = 1
+    end
 end
 
 local partCache = {}
@@ -676,13 +749,7 @@ local function getLiveClarkTargets(buffer)
     return buffer
 end
 
-local function drawModelHighlight(object, camera, color, category)
-    local cf, size = getObjectBoundingData(object)
-
-    if not cf or not size or size.Magnitude <= 0 then
-        return
-    end
-
+local function drawModelHighlight(cf, size, camera, color, category)
     local centerViewport = camera:WorldToViewportPoint(cf.Position)
 
     if centerViewport.Z <= 0 then
@@ -698,15 +765,15 @@ local function drawModelHighlight(object, camera, color, category)
     local parts, thickness, useFill
 
     if screenH >= category.lodMid then
-        parts = getObjectParts(object, category.maxParts)
+        parts = getObjectParts(category.lastObject, category.maxParts)
         useFill = triangleSupported and #parts <= category.maxFillParts
         thickness = 1.6
     elseif screenH >= category.lodFar then
-        parts = getObjectParts(object, category.midParts)
+        parts = getObjectParts(category.lastObject, category.midParts)
         useFill = false
         thickness = math.clamp(screenH / 200, 0.9, 1.3)
     else
-        parts = getObjectParts(object, category.farParts)
+        parts = getObjectParts(category.lastObject, category.farParts)
         useFill = false
         thickness = math.clamp(screenH / 200, 0.6, 0.9)
     end
@@ -722,6 +789,7 @@ local categories = {
         getColor = getClarkColor,
         getTargets = getClarkTargets,
         buffer = {},
+        lastObject = nil,
         maxParts = 60,
         maxFillParts = 18,
         midParts = 14,
@@ -734,6 +802,7 @@ local categories = {
         getColor = getPlayersColor,
         getTargets = getLiveTargets,
         buffer = {},
+        lastObject = nil,
         maxParts = 30,
         maxFillParts = 12,
         midParts = 10,
@@ -746,6 +815,7 @@ local categories = {
         getColor = getClarkPlayersColor,
         getTargets = getLiveClarkTargets,
         buffer = {},
+        lastObject = nil,
         maxParts = 30,
         maxFillParts = 12,
         midParts = 10,
@@ -759,6 +829,7 @@ local renderConnection = RunService.RenderStepped:Connect(function()
     if not guiOpen or not drawingSupported then
         hideLinesAfter(0)
         hideTrianglesAfter(0)
+        hideTextsAfter(0)
         return
     end
 
@@ -767,30 +838,52 @@ local renderConnection = RunService.RenderStepped:Connect(function()
     if not camera then
         hideLinesAfter(0)
         hideTrianglesAfter(0)
+        hideTextsAfter(0)
         return
+    end
+
+    local origin
+    local playerCharacter = player.Character
+    local playerRoot = playerCharacter and playerCharacter:FindFirstChild("HumanoidRootPart")
+
+    if playerRoot then
+        origin = playerRoot.Position
+    else
+        origin = camera.CFrame.Position
     end
 
     currentLineIndex = 0
     currentTriangleIndex = 0
+    currentTextIndex = 0
 
     for _, category in ipairs(categories) do
         local state = category.state
 
-        if state.enabled and (state.model or state.boxes or state.tracers) then
+        if state.enabled and (state.model or state.boxes or state.tracers or state.name or state.distance) then
             local color = category.getColor()
             local targets = category.getTargets(category.buffer)
 
             for _, object in ipairs(targets) do
-                if state.model then
-                    drawModelHighlight(object, camera, color, category)
-                end
+                local cf, size = getObjectBoundingData(object)
 
-                if state.boxes then
-                    drawBoundingBox(object, camera, color)
-                end
+                if cf and size and size.Magnitude > 0 then
+                    category.lastObject = object
 
-                if state.tracers then
-                    drawTracer(object, camera, color)
+                    if state.model then
+                        drawModelHighlight(cf, size, camera, color, category)
+                    end
+
+                    if state.boxes then
+                        drawBoundingBox(cf, size, camera, color)
+                    end
+
+                    if state.tracers then
+                        drawTracer(cf, size, camera, color)
+                    end
+
+                    if textSupported and (state.name or state.distance) then
+                        drawTargetInfo(object, cf, size, camera, color, state, origin)
+                    end
                 end
             end
         end
@@ -798,6 +891,7 @@ local renderConnection = RunService.RenderStepped:Connect(function()
 
     hideLinesAfter(currentLineIndex)
     hideTrianglesAfter(currentTriangleIndex)
+    hideTextsAfter(currentTextIndex)
 end)
 
 pcall(function()
@@ -815,5 +909,6 @@ pcall(function()
 
         hideLinesAfter(0)
         hideTrianglesAfter(0)
+        hideTextsAfter(0)
     end)
 end)

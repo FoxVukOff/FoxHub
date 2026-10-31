@@ -893,7 +893,9 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
         enabled = false,
         model = true,
         boxes = false,
-        tracers = false
+        tracers = false,
+        distance = false,
+        name = false
     }
 
     local mainRow, mainSwitch, mainCircle = ui.createToggleRow(wrapper, title, 0)
@@ -932,7 +934,9 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     local modelRow, modelSwitch, modelCircle = ui.createSubToggleRow(options, "Model", 0)
     local boxesRow, boxesSwitch, boxesCircle = ui.createSubToggleRow(options, "Boxes", 1)
     local tracersRow, tracersSwitch, tracersCircle = ui.createSubToggleRow(options, "Tracers", 2)
-    local colorSelector, getColor = ui.createColorSelector(options, "Color", colorOptions, defaultColorIndex, 3)
+    local distanceRow, distanceSwitch, distanceCircle = ui.createSubToggleRow(options, "Distance", 3)
+    local nameRow, nameSwitch, nameCircle = ui.createSubToggleRow(options, "Name", 4)
+    local colorSelector, getColor = ui.createColorSelector(options, "Color", colorOptions, defaultColorIndex, 5)
 
     local arrowBtn = Instance.new("TextButton")
     arrowBtn.Size = UDim2.new(0, 26, 0, 26)
@@ -1008,6 +1012,8 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     ui.setSubToggleState(state.model, modelSwitch, modelCircle)
     ui.setSubToggleState(state.boxes, boxesSwitch, boxesCircle)
     ui.setSubToggleState(state.tracers, tracersSwitch, tracersCircle)
+    ui.setSubToggleState(state.distance, distanceSwitch, distanceCircle)
+    ui.setSubToggleState(state.name, nameSwitch, nameCircle)
 
     mainSwitch.MouseButton1Click:Connect(function()
         state.enabled = not state.enabled
@@ -1031,6 +1037,18 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
         state.tracers = not state.tracers
         ui.spawnConfetti(tracersSwitch)
         ui.setSubToggleState(state.tracers, tracersSwitch, tracersCircle)
+    end)
+
+    distanceSwitch.MouseButton1Click:Connect(function()
+        state.distance = not state.distance
+        ui.spawnConfetti(distanceSwitch)
+        ui.setSubToggleState(state.distance, distanceSwitch, distanceCircle)
+    end)
+
+    nameSwitch.MouseButton1Click:Connect(function()
+        state.name = not state.name
+        ui.spawnConfetti(nameSwitch)
+        ui.setSubToggleState(state.name, nameSwitch, nameCircle)
     end)
 
     return wrapper, state, getColor
