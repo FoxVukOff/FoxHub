@@ -259,7 +259,6 @@ end)
 
 local drawingSupported = false
 local triangleSupported = false
-local squareSupported = false
 
 pcall(function()
     local testLine = Drawing.new("Line")
@@ -270,12 +269,6 @@ pcall(function()
         local testTriangle = Drawing.new("Triangle")
         testTriangle.Visible = false
         triangleSupported = true
-    end)
-
-    pcall(function()
-        local testSquare = Drawing.new("Square")
-        testSquare.Visible = false
-        squareSupported = true
     end)
 end)
 
@@ -294,15 +287,12 @@ end
 
 local LINE_CAP = 1500
 local TRI_CAP = 4000
-local SQ_CAP = 200
 
 local linePool = {}
 local trianglePool = {}
-local squarePool = {}
 
 local currentLineIndex = 0
 local currentTriangleIndex = 0
-local currentSquareIndex = 0
 
 local function acquireLine(index)
     local line = linePool[index]
@@ -332,20 +322,6 @@ local function acquireTriangle(index)
     return triangle
 end
 
-local function acquireSquare(index)
-    local square = squarePool[index]
-
-    if not square then
-        square = Drawing.new("Square")
-        square.Visible = false
-        squarePool[index] = square
-    end
-
-    square.Visible = true
-
-    return square
-end
-
 local function hideLinesAfter(index)
     for i = index + 1, #linePool do
         linePool[i].Visible = false
@@ -355,12 +331,6 @@ end
 local function hideTrianglesAfter(index)
     for i = index + 1, #trianglePool do
         trianglePool[i].Visible = false
-    end
-end
-
-local function hideSquaresAfter(index)
-    for i = index + 1, #squarePool do
-        squarePool[i].Visible = false
     end
 end
 
@@ -382,16 +352,6 @@ local function acquireCurrentTriangle()
     currentTriangleIndex = currentTriangleIndex + 1
 
     return acquireTriangle(currentTriangleIndex)
-end
-
-local function acquireCurrentSquare()
-    if currentSquareIndex >= SQ_CAP then
-        return nil
-    end
-
-    currentSquareIndex = currentSquareIndex + 1
-
-    return acquireSquare(currentSquareIndex)
 end
 
 local boxOffsets = {
@@ -478,6 +438,12 @@ local function drawPartHighlight(part, camera, color, useFill, thickness)
         return
     end
 
+    local partScreenH = getScreenHeight(part.CFrame, size, camera)
+
+    if not partScreenH or partScreenH < 2 then
+        return
+    end
+
     local screenPoints = getScreenCorners(part.CFrame, size, camera)
 
     if not screenPoints then
@@ -529,65 +495,6 @@ local function drawPartHighlight(part, camera, color, useFill, thickness)
         line.Color = color
         line.Thickness = thickness
         line.Transparency = 1
-    end
-end
-
-local function drawSoftSilhouette(cf, size, camera, color, opacity)
-    local screenPoints = getScreenCorners(cf, size, camera)
-
-    if not screenPoints then
-        return
-    end
-
-    local minX, minY = math.huge, math.huge
-    local maxX, maxY = -math.huge, -math.huge
-
-    for i = 1, #screenPoints do
-        local p = screenPoints[i]
-
-        if p.X < minX then minX = p.X end
-        if p.Y < minY then minY = p.Y end
-        if p.X > maxX then maxX = p.X end
-        if p.Y > maxY then maxY = p.Y end
-    end
-
-    local w = maxX - minX
-    local h = maxY - minY
-
-    if w <= 0 or h <= 0 then
-        return
-    end
-
-    if squareSupported then
-        local square = acquireCurrentSquare()
-
-        if square then
-            square.Filled = true
-            square.Position = Vector2.new(minX, minY)
-            square.Size = Vector2.new(w, h)
-            square.Color = color
-            square.Transparency = opacity
-        end
-    else
-        local a = Vector2.new(minX, minY)
-        local b = Vector2.new(maxX, minY)
-        local c = Vector2.new(maxX, maxY)
-        local d = Vector2.new(minX, maxY)
-        local edges = {{a, b}, {b, c}, {c, d}, {d, a}}
-
-        for _, e in ipairs(edges) do
-            local line = acquireCurrentLine()
-
-            if not line then
-                return
-            end
-
-            line.From = e[1]
-            line.To = e[2]
-            line.Color = color
-            line.Thickness = 1.2
-            line.Transparency = 1
-        end
     end
 end
 
@@ -788,21 +695,24 @@ local function drawModelHighlight(object, camera, color, category)
         return
     end
 
-    if screenH < category.lodFar then
-        drawSoftSilhouette(cf, size, camera, color, 0.5)
-    elseif screenH < category.lodMid then
-        local parts = getObjectParts(object, category.midParts)
+    local parts, thickness, useFill
 
-        for _, part in ipairs(parts) do
-            drawPartHighlight(part, camera, color, false, 1.3)
-        end
+    if screenH >= category.lodMid then
+        parts = getObjectParts(object, category.maxParts)
+        useFill = triangleSupported and #parts <= category.maxFillParts
+        thickness = 1.6
+    elseif screenH >= category.lodFar then
+        parts = getObjectParts(object, category.midParts)
+        useFill = false
+        thickness = math.clamp(screenH / 200, 0.9, 1.3)
     else
-        local parts = getObjectParts(object, category.maxParts)
-        local useFill = triangleSupported and #parts <= category.maxFillParts
+        parts = getObjectParts(object, category.farParts)
+        useFill = false
+        thickness = math.clamp(screenH / 200, 0.6, 0.9)
+    end
 
-        for _, part in ipairs(parts) do
-            drawPartHighlight(part, camera, color, useFill, 1.5)
-        end
+    for _, part in ipairs(parts) do
+        drawPartHighlight(part, camera, color, useFill, thickness)
     end
 end
 
@@ -815,6 +725,7 @@ local categories = {
         maxParts = 60,
         maxFillParts = 18,
         midParts = 14,
+        farParts = 10,
         lodFar = 110,
         lodMid = 240
     },
@@ -826,6 +737,7 @@ local categories = {
         maxParts = 30,
         maxFillParts = 12,
         midParts = 10,
+        farParts = 8,
         lodFar = 110,
         lodMid = 240
     },
@@ -837,6 +749,7 @@ local categories = {
         maxParts = 30,
         maxFillParts = 12,
         midParts = 10,
+        farParts = 8,
         lodFar = 110,
         lodMid = 240
     }
@@ -846,7 +759,6 @@ local renderConnection = RunService.RenderStepped:Connect(function()
     if not guiOpen or not drawingSupported then
         hideLinesAfter(0)
         hideTrianglesAfter(0)
-        hideSquaresAfter(0)
         return
     end
 
@@ -855,13 +767,11 @@ local renderConnection = RunService.RenderStepped:Connect(function()
     if not camera then
         hideLinesAfter(0)
         hideTrianglesAfter(0)
-        hideSquaresAfter(0)
         return
     end
 
     currentLineIndex = 0
     currentTriangleIndex = 0
-    currentSquareIndex = 0
 
     for _, category in ipairs(categories) do
         local state = category.state
@@ -888,7 +798,6 @@ local renderConnection = RunService.RenderStepped:Connect(function()
 
     hideLinesAfter(currentLineIndex)
     hideTrianglesAfter(currentTriangleIndex)
-    hideSquaresAfter(currentSquareIndex)
 end)
 
 pcall(function()
@@ -906,6 +815,5 @@ pcall(function()
 
         hideLinesAfter(0)
         hideTrianglesAfter(0)
-        hideSquaresAfter(0)
     end)
 end)

@@ -939,17 +939,46 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     arrowBtn.Position = UDim2.new(1, -102, 0.5, -13)
     arrowBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
     arrowBtn.BorderSizePixel = 0
-    arrowBtn.Text = "▾"
-    arrowBtn.TextColor3 = Color3.fromRGB(190, 190, 215)
-    arrowBtn.TextSize = 14
-    arrowBtn.Font = Enum.Font.GothamBold
+    arrowBtn.Text = ""
     arrowBtn.AutoButtonColor = false
-    arrowBtn.Rotation = -90
     arrowBtn.Parent = mainRow
 
     local arrowCorner = Instance.new("UICorner")
     arrowCorner.CornerRadius = UDim.new(0, 8)
     arrowCorner.Parent = arrowBtn
+
+    local arrowIcon = Instance.new("Frame")
+    arrowIcon.Size = UDim2.new(0, 16, 0, 10)
+    arrowIcon.Position = UDim2.new(0.5, -8, 0.5, -5)
+    arrowIcon.BackgroundTransparency = 1
+    arrowIcon.Rotation = -90
+    arrowIcon.Parent = arrowBtn
+
+    local leftStroke = Instance.new("Frame")
+    leftStroke.Size = UDim2.new(0, 9, 0, 2)
+    leftStroke.AnchorPoint = Vector2.new(0.5, 0.5)
+    leftStroke.Position = UDim2.new(0, 4.5, 0, 4)
+    leftStroke.Rotation = 45
+    leftStroke.BackgroundColor3 = Color3.fromRGB(190, 190, 215)
+    leftStroke.BorderSizePixel = 0
+    leftStroke.Parent = arrowIcon
+
+    local leftStrokeCorner = Instance.new("UICorner")
+    leftStrokeCorner.CornerRadius = UDim.new(1, 0)
+    leftStrokeCorner.Parent = leftStroke
+
+    local rightStroke = Instance.new("Frame")
+    rightStroke.Size = UDim2.new(0, 9, 0, 2)
+    rightStroke.AnchorPoint = Vector2.new(0.5, 0.5)
+    rightStroke.Position = UDim2.new(0, 11.5, 0, 4)
+    rightStroke.Rotation = -45
+    rightStroke.BackgroundColor3 = Color3.fromRGB(190, 190, 215)
+    rightStroke.BorderSizePixel = 0
+    rightStroke.Parent = arrowIcon
+
+    local rightStrokeCorner = Instance.new("UICorner")
+    rightStrokeCorner.CornerRadius = UDim.new(1, 0)
+    rightStrokeCorner.Parent = rightStroke
 
     local optionsOpen = false
     options.Visible = false
@@ -970,7 +999,7 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
         optionsOpen = not optionsOpen
         options.Visible = optionsOpen
 
-        TweenService:Create(arrowBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TweenService:Create(arrowIcon, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Rotation = optionsOpen and 0 or -90
         }):Play()
     end)
