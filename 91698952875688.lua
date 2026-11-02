@@ -17,7 +17,6 @@ ui.addCloseButton(header, mainFrame, screenGui)
 local container = ui.createScrollingFrame(mainFrame)
 
 local speedValue = 0
-local flyEnabled = false
 local flySpeed = 50
 local noclipEnabled = false
 local guiOpen = true
@@ -44,12 +43,12 @@ speedRow, speedBox, speedApply = ui.createInputRow(container, "Speed", "0", "App
     end
 end)
 
-local rowFly, swFly, circFly = ui.createToggleRow(container, "Fly (CFrame)", 2)
+local flyWrapper, flyOptions, flyState = ui.createDropdownPanel(container, "Fly (CFrame)", 2)
 
 local flySpeedBox
 local flySpeedRow, flySpeedApply
 
-flySpeedRow, flySpeedBox, flySpeedApply = ui.createInputRow(container, "Fly Speed", "50", "Apply", 3, function(text)
+flySpeedRow, flySpeedBox, flySpeedApply = ui.createInputRow(flyOptions, "Fly Speed", "50", "Apply", 0, function(text)
     local cleaned = tostring(text):gsub(",", "."):gsub("%s+", "")
     local value = tonumber(cleaned)
 
@@ -68,7 +67,7 @@ flySpeedRow, flySpeedBox, flySpeedApply = ui.createInputRow(container, "Fly Spee
     end
 end)
 
-local rowNoclip, swNoclip, circNoclip = ui.createToggleRow(container, "Noclip", 4)
+local rowNoclip, swNoclip, circNoclip = ui.createToggleRow(container, "Noclip", 3)
 
 local colorOptions = {
     {name = "Green", color = Color3.fromRGB(80, 255, 140)},
@@ -81,15 +80,9 @@ local colorOptions = {
     {name = "White", color = Color3.fromRGB(240, 240, 240)}
 }
 
-local clarkPanel, clarkState, getClarkColor = ui.createEspPanel(container, "Clark ESP", colorOptions, 2, 5)
-local playersPanel, playersState, getPlayersColor = ui.createEspPanel(container, "Players ESP", colorOptions, 1, 6)
-local clarkPlayersPanel, clarkPlayersState, getClarkPlayersColor = ui.createEspPanel(container, "Clark Players ESP", colorOptions, 5, 7)
-
-swFly.MouseButton1Click:Connect(function()
-    ui.spawnConfetti(swFly)
-    flyEnabled = not flyEnabled
-    ui.setToggleState(flyEnabled, swFly, circFly)
-end)
+local clarkPanel, clarkState, getClarkColor = ui.createEspPanel(container, "Clark ESP", colorOptions, 2, 4)
+local playersPanel, playersState, getPlayersColor = ui.createEspPanel(container, "Players ESP", colorOptions, 1, 5)
+local clarkPlayersPanel, clarkPlayersState, getClarkPlayersColor = ui.createEspPanel(container, "Clark Players ESP", colorOptions, 5, 6)
 
 swNoclip.MouseButton1Click:Connect(function()
     ui.spawnConfetti(swNoclip)
@@ -129,7 +122,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
     updateKey(input, true)
 
-    if speedValue > 0 and not flyEnabled and input.KeyCode == Enum.KeyCode.Space then
+    if speedValue > 0 and not flyState.enabled and input.KeyCode == Enum.KeyCode.Space then
         local character = player.Character
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
@@ -308,7 +301,7 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
         or character:FindFirstChild("Torso")
         or character:FindFirstChild("UpperTorso")
 
-    if flyEnabled then
+    if flyState.enabled then
         if root then
             pcall(function()
                 root.AssemblyLinearVelocity = Vector3.zero
@@ -1019,7 +1012,7 @@ pcall(function()
     screenGui.Destroying:Connect(function()
         guiOpen = false
         speedValue = 0
-        flyEnabled = false
+        flyState.enabled = false
         noclipEnabled = false
 
         if heartbeatConnection then

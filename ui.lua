@@ -874,9 +874,9 @@ function ui.createColorSelector(container, caption, colors, defaultIndex, order)
     end
 end
 
-function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, order)
+function ui.createDropdownPanel(container, title, order)
     local wrapper = Instance.new("Frame")
-    wrapper.Name = "EspPanelWrapper"
+    wrapper.Name = "DropdownPanelWrapper"
     wrapper.Size = UDim2.new(1, 0, 0, 0)
     wrapper.AutomaticSize = Enum.AutomaticSize.Y
     wrapper.BackgroundTransparency = 1
@@ -890,18 +890,13 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     wrapperLayout.Parent = wrapper
 
     local state = {
-        enabled = false,
-        model = true,
-        boxes = false,
-        tracers = false,
-        distance = false,
-        name = false
+        enabled = false
     }
 
     local mainRow, mainSwitch, mainCircle = ui.createToggleRow(wrapper, title, 0)
 
     local options = Instance.new("Frame")
-    options.Name = "EspOptions"
+    options.Name = "DropdownOptions"
     options.Size = UDim2.new(1, 0, 0, 0)
     options.AutomaticSize = Enum.AutomaticSize.Y
     options.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
@@ -930,13 +925,6 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     optionsPadding.PaddingLeft = UDim.new(0, 10)
     optionsPadding.PaddingRight = UDim.new(0, 10)
     optionsPadding.Parent = options
-
-    local modelRow, modelSwitch, modelCircle = ui.createSubToggleRow(options, "Model", 0)
-    local boxesRow, boxesSwitch, boxesCircle = ui.createSubToggleRow(options, "Boxes", 1)
-    local tracersRow, tracersSwitch, tracersCircle = ui.createSubToggleRow(options, "Tracers", 2)
-    local distanceRow, distanceSwitch, distanceCircle = ui.createSubToggleRow(options, "Distance", 3)
-    local nameRow, nameSwitch, nameCircle = ui.createSubToggleRow(options, "Name", 4)
-    local colorSelector, getColor = ui.createColorSelector(options, "Color", colorOptions, defaultColorIndex, 5)
 
     local arrowBtn = Instance.new("TextButton")
     arrowBtn.Size = UDim2.new(0, 26, 0, 26)
@@ -1009,17 +997,37 @@ function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, or
     end)
 
     ui.setToggleState(state.enabled, mainSwitch, mainCircle)
-    ui.setSubToggleState(state.model, modelSwitch, modelCircle)
-    ui.setSubToggleState(state.boxes, boxesSwitch, boxesCircle)
-    ui.setSubToggleState(state.tracers, tracersSwitch, tracersCircle)
-    ui.setSubToggleState(state.distance, distanceSwitch, distanceCircle)
-    ui.setSubToggleState(state.name, nameSwitch, nameCircle)
 
     mainSwitch.MouseButton1Click:Connect(function()
         state.enabled = not state.enabled
         ui.spawnConfetti(mainSwitch)
         ui.setToggleState(state.enabled, mainSwitch, mainCircle)
     end)
+
+    return wrapper, options, state, mainSwitch, mainCircle
+end
+
+function ui.createEspPanel(container, title, colorOptions, defaultColorIndex, order)
+    local wrapper, options, state = ui.createDropdownPanel(container, title, order)
+
+    state.model = true
+    state.boxes = false
+    state.tracers = false
+    state.distance = false
+    state.name = false
+
+    local modelRow, modelSwitch, modelCircle = ui.createSubToggleRow(options, "Model", 0)
+    local boxesRow, boxesSwitch, boxesCircle = ui.createSubToggleRow(options, "Boxes", 1)
+    local tracersRow, tracersSwitch, tracersCircle = ui.createSubToggleRow(options, "Tracers", 2)
+    local distanceRow, distanceSwitch, distanceCircle = ui.createSubToggleRow(options, "Distance", 3)
+    local nameRow, nameSwitch, nameCircle = ui.createSubToggleRow(options, "Name", 4)
+    local colorSelector, getColor = ui.createColorSelector(options, "Color", colorOptions, defaultColorIndex, 5)
+
+    ui.setSubToggleState(state.model, modelSwitch, modelCircle)
+    ui.setSubToggleState(state.boxes, boxesSwitch, boxesCircle)
+    ui.setSubToggleState(state.tracers, tracersSwitch, tracersCircle)
+    ui.setSubToggleState(state.distance, distanceSwitch, distanceCircle)
+    ui.setSubToggleState(state.name, nameSwitch, nameCircle)
 
     modelSwitch.MouseButton1Click:Connect(function()
         state.model = not state.model
