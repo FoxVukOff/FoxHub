@@ -17,6 +17,9 @@ ui.addCloseButton(header, mainFrame, screenGui)
 local container = ui.createScrollingFrame(mainFrame)
 
 local speedValue = 0
+local flyEnabled = false
+local flySpeed = 50
+local noclipEnabled = false
 local guiOpen = true
 
 local speedBox
@@ -41,6 +44,32 @@ speedRow, speedBox, speedApply = ui.createInputRow(container, "Speed", "0", "App
     end
 end)
 
+local rowFly, swFly, circFly = ui.createToggleRow(container, "Fly (CFrame)", 2)
+
+local flySpeedBox
+local flySpeedRow, flySpeedApply
+
+flySpeedRow, flySpeedBox, flySpeedApply = ui.createInputRow(container, "Fly Speed", "50", "Apply", 3, function(text)
+    local cleaned = tostring(text):gsub(",", "."):gsub("%s+", "")
+    local value = tonumber(cleaned)
+
+    if not value then
+        value = 50
+    end
+
+    if value < 0 then
+        value = 0
+    end
+
+    flySpeed = value
+
+    if flySpeedBox then
+        flySpeedBox.Text = tostring(value)
+    end
+end)
+
+local rowNoclip, swNoclip, circNoclip = ui.createToggleRow(container, "Noclip", 4)
+
 local colorOptions = {
     {name = "Green", color = Color3.fromRGB(80, 255, 140)},
     {name = "Red", color = Color3.fromRGB(255, 80, 80)},
@@ -52,15 +81,29 @@ local colorOptions = {
     {name = "White", color = Color3.fromRGB(240, 240, 240)}
 }
 
-local clarkPanel, clarkState, getClarkColor = ui.createEspPanel(container, "Clark ESP", colorOptions, 2, 2)
-local playersPanel, playersState, getPlayersColor = ui.createEspPanel(container, "Players ESP", colorOptions, 1, 3)
-local clarkPlayersPanel, clarkPlayersState, getClarkPlayersColor = ui.createEspPanel(container, "Clark Players ESP", colorOptions, 5, 4)
+local clarkPanel, clarkState, getClarkColor = ui.createEspPanel(container, "Clark ESP", colorOptions, 2, 5)
+local playersPanel, playersState, getPlayersColor = ui.createEspPanel(container, "Players ESP", colorOptions, 1, 6)
+local clarkPlayersPanel, clarkPlayersState, getClarkPlayersColor = ui.createEspPanel(container, "Clark Players ESP", colorOptions, 5, 7)
+
+swFly.MouseButton1Click:Connect(function()
+    ui.spawnConfetti(swFly)
+    flyEnabled = not flyEnabled
+    ui.setToggleState(flyEnabled, swFly, circFly)
+end)
+
+swNoclip.MouseButton1Click:Connect(function()
+    ui.spawnConfetti(swNoclip)
+    noclipEnabled = not noclipEnabled
+    ui.setToggleState(noclipEnabled, swNoclip, circNoclip)
+end)
 
 local heldKeys = {
     W = false,
     A = false,
     S = false,
-    D = false
+    D = false,
+    Space = false,
+    Ctrl = false
 }
 
 local function updateKey(input, state)
@@ -72,6 +115,10 @@ local function updateKey(input, state)
         heldKeys.S = state
     elseif input.KeyCode == Enum.KeyCode.D then
         heldKeys.D = state
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        heldKeys.Space = state
+    elseif input.KeyCode == Enum.KeyCode.LeftControl then
+        heldKeys.Ctrl = state
     end
 end
 
@@ -82,7 +129,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
     updateKey(input, true)
 
-    if speedValue > 0 and input.KeyCode == Enum.KeyCode.Space then
+    if speedValue > 0 and not flyEnabled and input.KeyCode == Enum.KeyCode.Space then
         local character = player.Character
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
@@ -158,6 +205,49 @@ local function getInputDirection()
     return Vector3.zero
 end
 
+local function getFlyDirection()
+    local camera = getCamera()
+
+    if not camera then
+        return Vector3.zero
+    end
+
+    local forward = camera.CFrame.LookVector
+    local right = camera.CFrame.RightVector
+
+    local direction = Vector3.zero
+
+    if heldKeys.W then
+        direction = direction + forward
+    end
+
+    if heldKeys.S then
+        direction = direction - forward
+    end
+
+    if heldKeys.D then
+        direction = direction + right
+    end
+
+    if heldKeys.A then
+        direction = direction - right
+    end
+
+    if heldKeys.Space then
+        direction = direction + Vector3.new(0, 1, 0)
+    end
+
+    if heldKeys.Ctrl then
+        direction = direction - Vector3.new(0, 1, 0)
+    end
+
+    if direction.Magnitude > 0.001 then
+        return direction.Unit
+    end
+
+    return Vector3.zero
+end
+
 local speedParams = RaycastParams.new()
 speedParams.FilterType = Enum.RaycastFilterType.Exclude
 local lastSpeedCharacter = nil
@@ -202,10 +292,6 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
         return
     end
 
-    if speedValue <= 0 then
-        return
-    end
-
     local character = player.Character
 
     if not character then
@@ -221,6 +307,28 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
     local root = character:FindFirstChild("HumanoidRootPart")
         or character:FindFirstChild("Torso")
         or character:FindFirstChild("UpperTorso")
+
+    if flyEnabled then
+        if root then
+            pcall(function()
+                root.AssemblyLinearVelocity = Vector3.zero
+            end)
+
+            local direction = getFlyDirection()
+
+            if direction.Magnitude > 0 and flySpeed > 0 then
+                pcall(function()
+                    root.CFrame = root.CFrame + direction * flySpeed * deltaTime
+                end)
+            end
+        end
+
+        return
+    end
+
+    if speedValue <= 0 then
+        return
+    end
 
     if not humanoid or not root or humanoid.Health <= 0 then
         return
@@ -255,6 +363,24 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
     end
 
     safeMoveRoot(root, step)
+end)
+
+local noclipConnection = RunService.Stepped:Connect(function()
+    if not guiOpen or not noclipEnabled then
+        return
+    end
+
+    local character = player.Character
+
+    if not character then
+        return
+    end
+
+    for _, desc in ipairs(character:GetDescendants()) do
+        if desc:IsA("BasePart") and desc.CanCollide then
+            desc.CanCollide = false
+        end
+    end
 end)
 
 local drawingSupported = false
@@ -749,7 +875,7 @@ local function getLiveClarkTargets(buffer)
     return buffer
 end
 
-local function drawModelHighlight(cf, size, camera, color, category)
+local function drawModelHighlight(object, cf, size, camera, color, category)
     local centerViewport = camera:WorldToViewportPoint(cf.Position)
 
     if centerViewport.Z <= 0 then
@@ -765,15 +891,15 @@ local function drawModelHighlight(cf, size, camera, color, category)
     local parts, thickness, useFill
 
     if screenH >= category.lodMid then
-        parts = getObjectParts(category.lastObject, category.maxParts)
+        parts = getObjectParts(object, category.maxParts)
         useFill = triangleSupported and #parts <= category.maxFillParts
         thickness = 1.6
     elseif screenH >= category.lodFar then
-        parts = getObjectParts(category.lastObject, category.midParts)
+        parts = getObjectParts(object, category.midParts)
         useFill = false
         thickness = math.clamp(screenH / 200, 0.9, 1.3)
     else
-        parts = getObjectParts(category.lastObject, category.farParts)
+        parts = getObjectParts(object, category.farParts)
         useFill = false
         thickness = math.clamp(screenH / 200, 0.6, 0.9)
     end
@@ -789,7 +915,6 @@ local categories = {
         getColor = getClarkColor,
         getTargets = getClarkTargets,
         buffer = {},
-        lastObject = nil,
         maxParts = 60,
         maxFillParts = 18,
         midParts = 14,
@@ -802,7 +927,6 @@ local categories = {
         getColor = getPlayersColor,
         getTargets = getLiveTargets,
         buffer = {},
-        lastObject = nil,
         maxParts = 30,
         maxFillParts = 12,
         midParts = 10,
@@ -815,7 +939,6 @@ local categories = {
         getColor = getClarkPlayersColor,
         getTargets = getLiveClarkTargets,
         buffer = {},
-        lastObject = nil,
         maxParts = 30,
         maxFillParts = 12,
         midParts = 10,
@@ -867,10 +990,8 @@ local renderConnection = RunService.RenderStepped:Connect(function()
                 local cf, size = getObjectBoundingData(object)
 
                 if cf and size and size.Magnitude > 0 then
-                    category.lastObject = object
-
                     if state.model then
-                        drawModelHighlight(cf, size, camera, color, category)
+                        drawModelHighlight(object, cf, size, camera, color, category)
                     end
 
                     if state.boxes then
@@ -898,9 +1019,15 @@ pcall(function()
     screenGui.Destroying:Connect(function()
         guiOpen = false
         speedValue = 0
+        flyEnabled = false
+        noclipEnabled = false
 
         if heartbeatConnection then
             heartbeatConnection:Disconnect()
+        end
+
+        if noclipConnection then
+            noclipConnection:Disconnect()
         end
 
         if renderConnection then
